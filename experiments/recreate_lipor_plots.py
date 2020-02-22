@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def changing_tt(num_samples):
     """
         How number of samples and distance travelled change with different values of Tt
@@ -49,8 +50,24 @@ def plot_distance():
     consolidated = consolidated.reset_index()
     plt.scatter(x=consolidated.ratio, y = consolidated.total_dist)
     plt.xlabel("Tt/Ts")
-    plt.ylabel("Total Distance Traveled")
+    plt.ylabel("Average Total Distance Traveled by Agent")
+    plt.title("Average Distance Traveled, by Tt/Ts Ratio (n of ~1000)")
     plt.savefig("visualizations/time_ratio_to_dist.png")
+    plt.clf()
+
+
+def plot_num_samples():
+    data = pd.read_csv("results/uniform.csv")
+    data['ratio'] = data.Tt / data.Ts
+    consolidated = data.groupby(["Ts", "Tt"])
+    consolidated = consolidated.agg(np.mean)
+    consolidated = consolidated.reset_index()
+    plt.scatter(x=consolidated.ratio, y = consolidated.num_samples)
+    plt.xlabel("Tt/Ts")
+    plt.ylabel("Mean Number of Samples")
+    plt.title("Average Number of Samples Taken by Agent, by Tt/Ts Ratio (n of ~1000)")
+    plt.savefig("visualizations/time_ratio_to_ns.png")
+    plt.clf()
 
 
 

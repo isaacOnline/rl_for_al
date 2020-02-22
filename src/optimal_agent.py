@@ -94,4 +94,4 @@ class OptimalAgent(object):
 
 
 if __name__ == "__main__":
-    experiment()
+    OptimalAgent()
