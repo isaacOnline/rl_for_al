@@ -1,1 +1,0 @@
-from src.change_point_problem import ChangePoint

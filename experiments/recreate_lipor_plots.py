@@ -1,5 +1,5 @@
-from src.optimal_agent import OptimalAgent
-from src.tracker import Tracker
+from agents import OptimalAgent
+from other.tracker import Tracker
 import time
 import pandas as pd
 import numpy as np

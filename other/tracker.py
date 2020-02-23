@@ -1,7 +1,7 @@
 import os
 from csv import writer
 
-from src.optimal_agent import OptimalAgent
+from agents import OptimalAgent
 
 
 class Tracker():

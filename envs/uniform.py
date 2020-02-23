@@ -1,10 +1,12 @@
 import gym
+import time
 import numpy as np
+import matplotlib.pyplot as plt
 from gym.spaces import Discrete
 from gym.utils import seeding
 
 
-class ChangePoint(gym.Env):
+class ChangePointUniformPrior(gym.Env):
     def __init__(self, Ts, Tt, N, stop_error, dist=np.random.sample, seed=None):
         """
 
@@ -32,7 +34,7 @@ class ChangePoint(gym.Env):
         self.Tt = Tt
         N = int(N)
         self.N = N
-        self.delta = 1 / N
+        self.delta = 1
         self.stop_error = stop_error
         self.seed = seed
         self.dist = dist
@@ -41,17 +43,14 @@ class ChangePoint(gym.Env):
         self.total_dist = 0
         self.location = 0
         self.min_loc = 0
-        self.max_loc = 1
+        self.max_loc = self.N
         self.location_hist = []
         self.direction = 1
-        self.change_point = self.dist(1)[0]
-        self.observation_space = Discrete(2)
-        self.action_space = Discrete(self.N)
-        self.S = 1
-        observation = 1
-        done = False
-        reward = 0
-        return observation, reward, done, self._get_info()
+        self.change_point = self.dist(1)[0] * self.N
+        self.observation_space = Discrete(self.N + 1)
+        self.action_space = Discrete(self.N + 1)
+        self.S = self.N
+        return self.S
 
     def _move_agent(self, action: float):
         self.total_dist += action
@@ -73,14 +72,14 @@ class ChangePoint(gym.Env):
 
     def step(self, action: int):
         assert self.action_space.contains(action)
-        action = action / self.N
         self._move_agent(action)
+
         # See if change point is to left or right
-        observation = self.location < self.change_point
+        relative_location = self.location < self.change_point
 
         # If change point is to the right of location, make direction positive, else negative
         # Also update where agent is searching
-        if observation == 1:
+        if relative_location == 1:
             self.direction = 1
             self.min_loc = self.location
         else:
@@ -88,7 +87,6 @@ class ChangePoint(gym.Env):
             self.max_loc = self.location
 
         self.S = self.max_loc - self.min_loc
-        self.S = np.round(self.S, int(np.log10(self.N)))
 
         if np.abs(self.location - self.change_point) < self.stop_error:
             done = True
@@ -100,4 +98,22 @@ class ChangePoint(gym.Env):
             # Update action space
             self.action_space = Discrete(n=self.S / self.delta)
 
-        return observation, reward, done, self._get_info()
+        return self.S, reward, done, self._get_info()
+
+    def render(self, mode='human'):
+        linex = np.linspace(0,self.N, 101)
+        liney = np.zeros(linex.shape)
+        hypespacex = np.linspace(self.min_loc, self.max_loc, 101)
+        hypespacey = np.zeros(hypespacex.shape)
+        fig, ax = plt.subplots(figsize=(5, 1))
+        ax.plot(linex,liney,c='black')
+        ax.plot(hypespacex, hypespacey, c='orange')
+        ax.scatter(self.change_point, 0, c='red',marker='x', zorder=1000)
+        ax.scatter(self.location, 0, c='m', zorder=1000)
+        ax.get_yaxis().set_visible(False)
+        fig.show()
+        time.sleep(1)
+
+
+    def close(self):
+        pass

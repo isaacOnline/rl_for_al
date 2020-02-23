@@ -2,7 +2,7 @@ import plotly.express as px
 import plotly
 import pandas as pd
 import numpy as np
-from src.optimal_agent import OptimalAgent
+from agents import OptimalAgent
 
 def run():
     outfile = "results/policy_by_ts_tt_ratio.csv"
