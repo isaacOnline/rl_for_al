@@ -76,25 +76,15 @@ class OptimalAgent(object):
         self.min_loc = 0
         self.max_loc = self.N
         self.direction = 1
-        self.length_of_hypothesis_space = self.N
         self.env.render()
         done=False
         while not done:
-           action = self.fout[self.length_of_hypothesis_space]
+           action = self.fout[int(observation)]
            observation, reward, done, _ = self.env.step(action)
            self.location_hist.append(self.location)
            self.location += action * self.direction
            self.total_dist += action
            self.num_samples += 1
-           if observation == 1:
-               self.direction = 1
-               self.min_loc = self.location
-           else:
-               self.direction = -1
-               self.max_loc = self.location
-           self.length_of_hypothesis_space = self.max_loc - self.min_loc
-           self.length_of_hypothesis_space = np.round(self.length_of_hypothesis_space,
-                                                      int(np.log10(self.N)))  # ignore rounding errors
            self.env.render()
 
 

@@ -62,7 +62,7 @@ class QLearner:
         num_actions = env.action_space.n
         num_states = env.observation_space.n
 
-        # create rewards array
+        # Why does optimal agent not work for change points > 800? create rewards array
         steps_per_bin = int(np.floor(steps/100))
         total_rewards = np.full((100,), 0.0)
         box_count = np.full((100,), 0)

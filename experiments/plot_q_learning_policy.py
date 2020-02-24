@@ -12,8 +12,8 @@ N = 1000
 def fit_agent():
     stop_error=1
     env = ChangePointUniformPrior(Ts, Tt, N, stop_error)
-    agent = QLearner(Ts, Tt)
-    state_action_values, rewards, counts = agent.fit(env, steps=100000000)
+    agent = QLearner()
+    state_action_values, rewards, counts = agent.fit(env, steps=100000)
     policy = np.array([np.arange(N + 1), agent.get_policy()]).transpose()
     sp = "results/q_learning_policy.csv"
     agent.plot_policy()
