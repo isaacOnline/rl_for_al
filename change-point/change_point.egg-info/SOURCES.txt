@@ -1,0 +1,7 @@
+README.md
+setup.py
+change_point.egg-info/PKG-INFO
+change_point.egg-info/SOURCES.txt
+change_point.egg-info/dependency_links.txt
+change_point.egg-info/requires.txt
+change_point.egg-info/top_level.txt

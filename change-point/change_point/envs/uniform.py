@@ -6,10 +6,9 @@ from gym.spaces import Discrete
 from gym.utils import seeding
 
 
-class ChangePointUniformPrior(gym.Env):
+class UniformPrior(gym.Env):
     def __init__(self, Ts, Tt, N, stop_error, dist=np.random.sample, seed=None):
         """
-
         :param stop_error:
         :param seed:
         :param dist: Distribution from which change point is to be drawn from. Defaults to uniform distribution over [0, 1).
@@ -19,11 +18,11 @@ class ChangePointUniformPrior(gym.Env):
         self._save_args(Ts, Tt, N, stop_error, seed, dist)
         self.reset()
 
-    def cost(self, action):
+    def _cost(self, action):
         return self.Ts + self.Tt * action
 
     def _reward(self, action):
-        return -1 * self.cost(action)
+        return -1 * self._cost(action)
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -90,7 +89,7 @@ class ChangePointUniformPrior(gym.Env):
 
         if np.abs(self.location - self.change_point) < self.stop_error:
             done = True
-            reward = 100
+            reward = 100000000
         else:
             done = False
             reward = self._reward(action)
@@ -114,6 +113,6 @@ class ChangePointUniformPrior(gym.Env):
         fig.show()
         time.sleep(1)
 
-
     def close(self):
-        pass
+        plt.clf()
+        plt.cla()

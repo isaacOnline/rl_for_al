@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib
+
 from envs import ChangePointUniformPrior
 
 class OptimalAgent(object):
@@ -16,7 +16,7 @@ class OptimalAgent(object):
         stop_error = stop_error / N
         N = int(N)
         Delta = 1/N
-        #TODO: change this to be always at large scale
+        #TODO: change this back to being of distance 1
 
         # initialize value, number of samples, and distance for each state
         # states are possible lengths of hypothesis space, so there are N total
@@ -65,7 +65,7 @@ class OptimalAgent(object):
         plt.xlim([0,self.N])
         plt.ylabel("Movement into Hypothesis Space")
         plt.ylim([0,self.N])
-        plt.show()
+        plt.savefig("visualizations/ideal_policy.png")
 
     def fit(self):
         observation = self.env.reset()

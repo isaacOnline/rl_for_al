@@ -3,6 +3,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import tqdm
 
+
 class QLearner:
     """
     QLearning reinforcement learning agent.
@@ -14,7 +15,6 @@ class QLearner:
       adaptive - (bool) Whether to use an adaptive policy for setting
         values of epsilon during training
     """
-
     def __init__(self, epsilon=0.2, discount=0.95, adaptive=False):
         self.epsilon = epsilon
         self.discount = discount
@@ -62,7 +62,7 @@ class QLearner:
         num_actions = env.action_space.n
         num_states = env.observation_space.n
 
-        # Why does optimal agent not work for change points > 800? create rewards array
+        # Create rewards array
         steps_per_bin = int(np.floor(steps/100))
         total_rewards = np.full((100,), 0.0)
         box_count = np.full((100,), 0)
