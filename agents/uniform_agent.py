@@ -1,22 +1,29 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import gym
+from other.Scorer import scorer
 
-from envs import ChangePointUniformPrior
 
-class OptimalAgent(object):
-    def __init__(self, Ts, Tt, N=1000, stop_error=1):
+class UniformAgent(object):
+    def __init__(self, Ts, Tt, N=1000, stop_error=1,prize=10000):
         self.Ts = Ts
         self.Tt = Tt
         self.N = N
         self.stop_error = stop_error
         self.calc_policy(Ts, Tt, N, stop_error)
-        self.env = ChangePointUniformPrior(self.Ts, self.Tt, self.N, self.stop_error)
+        kwargs = {
+            'Ts':self.Ts,
+            'Tt':self.Tt,
+            'N':self.N,
+            'stop_error':self.stop_error,
+            'prize':prize
+        }
+        self.env = gym.make("change_point:uniform-v0", **kwargs)
 
     def calc_policy(self, Ts, Tt, N=1000, stop_error=1):
         stop_error = stop_error / N
         N = int(N)
         Delta = 1/N
-        #TODO: change this back to being of distance 1
 
         # initialize value, number of samples, and distance for each state
         # states are possible lengths of hypothesis space, so there are N total
@@ -54,7 +61,6 @@ class OptimalAgent(object):
         self.S = S
         self.fout = f
         self.val = val
-        self.dist = dist
         self.ns = ns
 
     def plot_policy(self):
@@ -67,32 +73,17 @@ class OptimalAgent(object):
         plt.ylim([0,self.N])
         plt.savefig("visualizations/ideal_policy.png")
 
-    def fit(self):
-        observation = self.env.reset()
-        self.total_dist = 0
-        self.num_samples= 1
-        self.location = 0
-        self.location_hist = []
-        self.min_loc = 0
-        self.max_loc = self.N
-        self.direction = 1
-        self.env.render()
-        done=False
-        while not done:
-           action = self.fout[int(observation)]
-           observation, reward, done, _ = self.env.step(action)
-           self.location_hist.append(self.location)
-           self.location += action * self.direction
-           self.total_dist += action
-           self.num_samples += 1
-           self.env.render()
 
 
 if __name__ == "__main__":
-    stop_error = 1
     Ts = 1
-    Tt = 0.1
+    Tt = 10
     N = 1000
-    self = OptimalAgent(Ts=Ts, Tt=Tt, N=N, stop_error=stop_error)
-    self.fit()
-    self.plot_policy()
+    kwargs = {
+        'Ts': Ts,
+        'Tt': Tt,
+        'N': N
+    }
+    agnt = UniformAgent(Ts=Ts, Tt=Tt, N=N)
+    scorer().score(agnt.fout, gym.make("change_point:uniform-v0", **kwargs))
+    agnt.plot_policy()

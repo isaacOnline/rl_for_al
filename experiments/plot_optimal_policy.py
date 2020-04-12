@@ -2,12 +2,12 @@ import plotly.express as px
 import plotly
 import pandas as pd
 import numpy as np
-from agents import OptimalAgent
+from agents import UniformAgent
 
 def run():
     outfile = "results/policy_by_ts_tt_ratio.csv"
     for Tt in [0.00001,0.00005,0.0001,0.0005,0.001,0.005,0.01,0.05,0.1,0.5] + list(range(980,1001)):
-        agt = OptimalAgent(Ts=1,Tt=1,N=2500)
+        agt = UniformAgent(Ts=1,Tt=1,N=2500)
         agt.plot_policy()
         # Put in code here to save
 

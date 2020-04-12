@@ -1,2 +1,2 @@
-from agents.optimal_agent import OptimalAgent
+from agents.uniform_agent import UniformAgent
 from agents.q_learner import QLearner
