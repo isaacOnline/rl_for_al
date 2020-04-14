@@ -3,6 +3,7 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 
 class ValueIterator(object, metaclass=ABCMeta):
@@ -12,16 +13,16 @@ class ValueIterator(object, metaclass=ABCMeta):
         self.sample_cost = sample_cost
         self.movement_cost = movement_cost / N
 
+
     def calculate_policy(self):
-        for s in self.all_states:
-            if s <= 1:
+        for s in tqdm(self.all_states):
+            if self._state_is_terminal(s):
                 self.state_values[s] = 0
             else:
-
                 actions = pd.DataFrame({
                     "action": self._calculate_action_space(s)
                 })
-                actions['reward'] = -self.sample_cost - self.movement_cost * actions['action']
+                actions['reward'] = -self.sample_cost - self.movement_cost * np.abs(actions['action'])
 
                 possible_new_states = self._get_new_states(actions['action'], s)
                 actions['new_state1'] = possible_new_states[0]
@@ -39,14 +40,17 @@ class ValueIterator(object, metaclass=ABCMeta):
                 self.state_values[s] = action_values["value"][best_index]
 
     def _save(self, save_path):
-        plt.clf()
-        plt.plot(self.all_states, np.array(self.policy.copy()).flatten())
         plt.title(f"tt/ts: {self.movement_cost * self.N}/{self.sample_cost}, N: {self.N}")
         plt.xlabel("Size of Hypothesis Space")
         plt.xlim([0,self.N])
         plt.ylabel("Movement into Hypothesis Space")
         plt.ylim([0,self.N])
         plt.savefig(save_path)
+
+
+    @abstractmethod
+    def _state_is_terminal(self, state):
+        pass
 
     @abstractmethod
     def _calculate_prob(self, state_prime, state):

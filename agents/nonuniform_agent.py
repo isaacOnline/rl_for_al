@@ -1,107 +1,85 @@
 import numpy as np
+
 import matplotlib.pyplot as plt
-import gym
+from agents.value_iterator import ValueIterator
+from scipy.stats import uniform
+from itertools import product
 from other.Scorer import scorer
+import gym
 
 
-class NonUniformAgent(object):
-    def __init__(self, Ts, Tt, N=1000, stop_error=1,prize=10000):
-        self.Ts = Ts
-        self.Tt = Tt
-        self.N = N
-        self.stop_error = stop_error
-        self.calc_policy(Ts, Tt, np.repeat(1/(N), N), N, stop_error)
-        kwargs = {
-            'Ts':self.Ts,
-            'Tt':self.Tt,
-            'N':self.N,
-            'stop_error':self.stop_error,
-            'prize':prize
-        }
-        self.env = gym.make("change_point:normal-v0", **kwargs)
+class NonUniformAgent(ValueIterator):
+    def __init__(self, N, sample_cost = 1, movement_cost = 1000, dist = None):
+        # Dist must be an object with a cdf function
 
-    def calc_policy(self, Ts, Tt, p, N=10, stop_error=1):
-        N = int(N)
-        stop_error = stop_error / N
-        Delta = 1 / N
-        # states are tuples (x,xh) where x is the current location and xh is
-        # the opposite end of the hypothesis space
-        f = np.zeros((N + 1, N + 1))
-        val = np.zeros((N + 1, N + 1))
+        # Only let there be 1/self.stop_error + 1 number of states, since it doesn't make sense to have a state that is
+        # smaller than the stop error. I'm still going to round the states, because otherwise the state space isn't
+        # discrete.
+        if dist is None:
+            self.dist = uniform(0, N)
+        else:
+            self.dist = dist
 
-        # loop over possible lengths of hypothesis space
-        # dd = |x - xh|
-        for dd in range(N + 1):
-            print(dd / N)
-            # loop over possible current locations
-            for xx in range(N):
-                # calculate possible values of xh
-                xhList = []
-                if xx - dd >= 0:
-                    xhList.append(xx - dd)
-                if xx + dd <= N:
-                    xhList.append(xx + dd)
+        self.all_states = np.array(list(product(np.linspace(0, N, N + 1, dtype=np.int),
+                                  np.linspace(0, N, N + 1, dtype=np.int))))
+        self.all_states = self.all_states[np.argsort(np.abs(self.all_states[:,0] - self.all_states[:,1]))]
+        self.all_states = [tuple(s) for s in self.all_states]
 
-                # now compute value of each state
-                if dd / N <= stop_error:
-                    for xh in xhList:
-                        val[xx, xh] = 0
-                else:
-                    for xh in xhList:
-                        # look at all possible actions from this state
-                        # actions are distances to travel
-                        minVal = np.inf
-                        bestAction = 0
-                        for aa in range(1, dd):
-                            # Pst is the probability theta lies between xx and xx +/- aa
-                            if xx <= xh:
-                                # move forward
-                                direction = 1
-                                Pst = np.sum(p[xx:xx + aa]) / np.sum(p[xx:xh])
-                            else:
-                                # move backward
-                                direction = -1
-                                Pst = np.sum(p[xx - aa:xx]) / np.sum(p[xh:xx])
-                                # Pstc is the complement (theta between xx +/- aa and xh)
-                            Pstc = 1 - Pst
-                            tempVal = Ts + Tt * aa / N + Pst * val[xx + direction * aa, xx] + Pstc * val[
-                                xx + direction * aa, xh]
-                            if tempVal < minVal:
-                                bestAction = (xx + direction * aa) / N
-                                minVal = tempVal
+        ValueIterator.__init__(self, N, sample_cost, movement_cost)
+        self.policy = np.zeros((N+1, N+1), dtype=np.int)
 
-                            f[xx, xh] = bestAction
-                            val[xx, xh] = minVal
+        self.state_values = np.zeros((N+1, N+1))
 
-        self.fout = [fs / N for fs in f]
+    def _state_is_terminal(self, state):
+        return abs(state[0] - state[1]) <= 1
 
-        self.f = f
-        self.val = val
+    def _calculate_prob(self, state_prime, state):
+        state_prime_prob = np.array([self.dist.cdf(max(sp)) - self.dist.cdf(min(sp)) for sp in state_prime])
+        state_prob = self.dist.cdf(max(state)) - self.dist.cdf(min(state))
+        state_prob = np.repeat(state_prob, state_prime_prob.shape)
 
-    def plot_policy(self):
+        return state_prime_prob / state_prob
+
+    def save(self):
         plt.clf()
-        plt.plot(self.S * self.N, self.fout)
-        plt.title(f"tt/ts: {self.Tt}/{self.Ts}, N: {self.N}, Stop Error: {self.stop_error}")
-        plt.xlabel("Size of Hypothesis Space")
-        plt.xlim([0,self.N])
-        plt.ylabel("Movement into Hypothesis Space")
-        plt.ylim([0,self.N])
-        plt.savefig("visualizations/ideal_policy.png")
+        plt.plot(range(11), self.policy[0])
+        dist_name = self.dist.dist.name
+        save_path = f"visualizations/value_iterator/{self.movement_cost * self.N}_{dist_name}_from_nuf.png"
+        self._save(save_path)
+
+    def _calculate_action_space(self, s):
+        # if first bound is greater than second bound, we're moving backwards
+        if s[0] > s[1]:
+            action_space = range(-1, s[1] - s[0], -1)
+        # otherwise we're moving forwards
+        else:
+            action_space = range(1, s[1] - s[0], 1)
+        return action_space
+
+    def _get_new_states(self, actions, s):
+        # If changepoint is between current location and new location
+        s1 = [(s[0]+a, s[1]) for a in actions]
+
+        # If changepoint is between new location and other end of the hypothesis space
+        s2 = [(s[0]+a, s[0]) for a in actions]
+        return s1, s2
+
 
 
 if __name__ == "__main__":
     stop_error = 1
-    Ts = 1
-    Tt = 10
-    N = 10
-    reward = 0
+    sample_cost = 1
+    movement_cost = 10
+    N = 1000
     kwargs = {
-        'Ts': Ts,
-        'Tt': Tt,
+        'Ts': sample_cost,
+        'Tt': movement_cost,
         'N': N,
-        'stop_error': stop_error,
-        'prize': reward
     }
-    agnt = NonUniformAgent(Ts=Ts, Tt=Tt, N=N, stop_error=stop_error,prize=reward)
-    scorer().score(agnt.fout, gym.make("change_point:uniform-v0", **kwargs))
-    agnt.plot_policy()
+
+    agnt = NonUniformAgent(N, movement_cost=movement_cost)
+    agnt.calculate_policy()
+    agnt.save()
+    flat_policy = np.array(agnt.policy[0]).flatten()
+    scorer().score(flat_policy, gym.make("change_point:uniform-v0", **kwargs), trials = 100000)
+
