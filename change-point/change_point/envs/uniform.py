@@ -6,7 +6,9 @@ import numpy as np
 # Change point drawn from a uniform distribution here
 
 class UniformCP(ChangePoint):
-    def _initialize_distribution(self):
+    def _initialize_distribution(self, dist=None):
+        if dist is not None:
+            raise TypeError("Specifying a distribution is not possible for a uniform change point")
         self.dist = uniform(0, self.N)
 
     def _initialize_state(self):

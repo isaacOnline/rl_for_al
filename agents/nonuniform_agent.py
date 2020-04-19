@@ -37,15 +37,16 @@ class NonUniformAgent(ValueIterator):
         state_prime_prob = np.array([self.dist.cdf(max(sp)) - self.dist.cdf(min(sp)) for sp in state_prime])
         state_prob = self.dist.cdf(max(state)) - self.dist.cdf(min(state))
         state_prob = np.repeat(state_prob, state_prime_prob.shape)
-
         return state_prime_prob / state_prob
 
     def save(self):
         plt.clf()
         plt.plot(range(11), self.policy[0])
         dist_name = self.dist.dist.name
-        save_path = f"visualizations/value_iterator/{self.movement_cost * self.N}_{dist_name}_from_nuf.png"
+        save_path = f"visualizations/value_iterator/{self.movement_cost * self.N}_{dist_name}.png"
         self._save_image(save_path)
+        policy_path = f"results/value_iterator/{int(self.movement_cost * self.N)}_{self.N}_{dist_name}.csv"
+        np.savetxt(policy_path, self.policy)
 
     def _calculate_action_space(self, s):
         # if first bound is greater than second bound, we're moving backwards

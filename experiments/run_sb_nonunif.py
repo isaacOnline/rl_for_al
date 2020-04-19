@@ -2,35 +2,39 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from agents import UniformAgent
+from agents import NonUniformAgent
 from other.Scorer import scorer
 from other.model_tester import ModelRunner
 
 
-class UniformRunner(ModelRunner):
+class NonUniformRunner(ModelRunner):
     def __init__(self, model_name, nsteps, env_params):
-        self.env_name = "uniform"
+        self.env_name = "non_uniform"
+        self.dist = env_params['dist']
+        self.dist_name = self.dist.dist.name
         ModelRunner.__init__(self, model_name, nsteps, env_params)
 
     def get_vi_policy(self):
         try:
             policy = np.genfromtxt(
-                f"results/value_iterator/{self.params['movement_cost']}_{self.params['N']}_{self.env_name}.csv")
+                f"results/value_iterator/{self.params['movement_cost']}_{self.params['N']}_{self.dist_name}.csv")
         except:
-            agnt = UniformAgent(sample_cost=self.params['sample_cost'],
-                                movement_cost=self.params['movement_cost'],
-                                N=self.params['N'])
+            agnt = NonUniformAgent(sample_cost=self.params['sample_cost'],
+                                   movement_cost=self.params['movement_cost'],
+                                   N=self.params['N'],
+                                   dist=self.dist)
             agnt.save()
             policy = agnt.policy
         return policy
 
     def get_rl_policy(self):
         policy = []
-        for i in range(0, self.params['N'] + 1):
-            obs = np.array(i)
-            action = np.argmax(self.model.action_probability(obs))
-            mvmt, _ = self.env.get_movement(obs, self.params['N'], action)
-            policy.append([obs, mvmt])
+        for first_end in range(0, self.params['N'] + 1):
+            for second_end in range(0, self.params['N'] + 1):
+                obs = np.array([first_end, second_end])
+                action = np.argmax(self.model.action_probability(obs))
+                mvmt, _ = self.env.get_movement(obs, self.params['N'], action)
+                policy.append([obs, mvmt])
         policy = np.array(policy)
         return policy
 
@@ -89,7 +93,7 @@ if __name__ == "__main__":
                 'N': 1000
             }
 
-            runner = UniformRunner(model, nsteps, kwargs)
+            runner = UniformTester(model, nsteps, kwargs)
             runner.train()
             runner.save()
         # nsteps *= 2

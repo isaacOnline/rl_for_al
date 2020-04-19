@@ -12,19 +12,19 @@ from abc import ABC, abstractmethod
 
 
 class ChangePoint(gym.Env, ABC):
-    def __init__(self, sample_cost, movement_cost, N, seed=None):
+    def __init__(self, sample_cost, movement_cost, N, dist=None, seed=None):
         """
         :param stop_error:
         :param seed:
         """
         self.seed(seed)
         self._set_args(sample_cost, movement_cost, N, seed)
-        self._initialize_distribution()
+        self._initialize_distribution(dist)
         self._initialize_state()
         self.reset()
 
     @abstractmethod
-    def _initialize_distribution(self):
+    def _initialize_distribution(self, dist):
         pass
 
     @abstractmethod
@@ -74,6 +74,8 @@ class ChangePoint(gym.Env, ABC):
         :param action:
         :return:
         """
+        if len(S.shape) > 1:
+            S = abs(S[0] - S[1])
         raw_travel_dist = action/N * S
         rounded_travel_dist = np.round(raw_travel_dist)
 
@@ -134,7 +136,7 @@ class ChangePoint(gym.Env, ABC):
             self.direction = -1
             self.max_loc = self.location
 
-        self.S = np.array(self.max_loc - self.min_loc)
+        self._update_state()
 
         if np.abs(self.location - self.change_point) < 1:
             done = True
