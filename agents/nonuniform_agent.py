@@ -45,7 +45,7 @@ class NonUniformAgent(ValueIterator):
         plt.plot(range(11), self.policy[0])
         dist_name = self.dist.dist.name
         save_path = f"visualizations/value_iterator/{self.movement_cost * self.N}_{dist_name}_from_nuf.png"
-        self._save(save_path)
+        self._save_image(save_path)
 
     def _calculate_action_space(self, s):
         # if first bound is greater than second bound, we're moving backwards

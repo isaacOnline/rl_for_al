@@ -39,8 +39,8 @@ class ValueIterator(object, metaclass=ABCMeta):
                 self.policy[s] = action_values["action"][best_index]
                 self.state_values[s] = action_values["value"][best_index]
 
-    def _save(self, save_path):
-        plt.title(f"tt/ts: {self.movement_cost * self.N}/{self.sample_cost}, N: {self.N}")
+    def _save_image(self, save_path):
+        plt.title(f"tt/ts: {int(self.movement_cost * self.N)}/{self.sample_cost}, N: {self.N}")
         plt.xlabel("Size of Hypothesis Space")
         plt.xlim([0,self.N])
         plt.ylabel("Movement into Hypothesis Space")

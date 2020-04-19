@@ -10,8 +10,9 @@ from agents import UniformAgent
 from stable_baselines.common.policies import MlpPolicy
 from stable_baselines import PPO1, ACER, ACKTR, GAIL, DQN, TRPO, A2C, HER
 
+
 MODEL = "ACER"
-NSTEPS = 1000000
+NSTEPS = 50000
 models = {
     "A2C": A2C,
     "ACER": ACER,
@@ -24,28 +25,25 @@ models = {
 }
 
 
-def get_vi_policy(params):
-    agnt = UniformAgent(Ts=params['Ts'],
-                        Tt=params['Tt'],
-                        N=params['N'],
-                        stop_error=params['stop_error'],
-                        prize=params['prize'])
-    policy = np.array([agnt.S * agnt.N, agnt.fout])
-    return policy.transpose()
+def get_vi_policy(type, params):
+    try:
+        policy = np.genfromtxt(f"results/value_iterator/{params['movement_cost']}_{params['N']}_{type}.csv")
+    except:
+        agnt = UniformAgent(sample_cost=params['sample_cost'],
+                            movement_cost=params['movement_cost'],
+                            N=params['N'])
+        agnt.save()
+        policy = agnt.policy
+    return policy
 
 
-def get_rl_policy(model, N):
+def get_rl_policy(env, model, N):
     policy = []
-    for i in range(N + 1):
+    for i in range(0, N + 1):
         obs = np.array(i)
-        action, _ = model.predict(obs, deterministic=True)
-        if action == 0:
-            action += 1
-        elif action == N:
-            action -= 1
-        action = action / N * i
-        action = np.ceil(action)
-        policy.append([obs, action])
+        action = np.argmax(model.action_probability(obs))
+        mvmt, _ = env.get_movement(obs, N, action)
+        policy.append([obs, mvmt])
     policy = np.array(policy)
     return policy
 
@@ -54,9 +52,9 @@ def plot_policy_vs_optimal(rl_policy, vi_policy, params, dif):
     plt.clf()
 
     plt.plot(rl_policy[:, 0], rl_policy[:, 1], c='tab:orange', label=f"{MODEL} Learner")
-    plt.plot(vi_policy[:,0], vi_policy[:,1], c='B', label="Value Iteration")
+    plt.plot(rl_policy[:,0], vi_policy, c='B', label="Value Iteration")
 
-    plt.title(f"Train Time: {dif}, tt/ts: {params['Tt']}/{params['Ts']}, N: {params['N']}")
+    plt.title(f"Train Time: {dif}, tt/ts: {params['movement_cost']}/{params['sample_cost']}, N: {params['N']}")
     plt.xlabel("Size of Hypothesis Space")
     plt.ylabel("Movement into Hypothesis Space")
     plt.legend()
@@ -70,25 +68,26 @@ def plot_policy_vs_optimal(rl_policy, vi_policy, params, dif):
         i+=1
         save_path = f"visualizations/{MODEL}/{MODEL}_vs_optimal_{i}.png"
     plt.savefig(save_path)
+    return i
 
 
-def save_scores(rl_policy, vi_policy, run_time):
+def save_scores(rl_policy, vi_policy, run_time, id):
     rl_fout = rl_policy[:,1]
     env = gym.make('change_point:uniform-v0', **kwargs)
     print("{}:".format(MODEL))
     rl_reward, rl_ns, rl_dist = scorer().score(rl_fout,env)
 
-    vi_fout = vi_policy[:,1]
     env = gym.make('change_point:uniform-v0', **kwargs)
     print("\nValue Iteration:")
-    vi_reward, vi_ns, vi_dist = scorer().score(vi_fout,env)
+    vi_reward, vi_ns, vi_dist = scorer().score(vi_policy, env)
 
     line = pd.DataFrame({
+        "id": i,
         "time_steps":[NSTEPS],
         "train_time":[run_time],
         "model":[MODEL],
-        'Ts': kwargs['Ts'],
-        'Tt': kwargs['Tt'],
+        'Ts': kwargs['sample_cost'],
+        'Tt': kwargs['movement_cost'],
         'vi_reward': [vi_reward],
         'rl_reward': [rl_reward],
         'vi_ns': [vi_ns],
@@ -96,38 +95,33 @@ def save_scores(rl_policy, vi_policy, run_time):
         'vi_dist': [vi_dist],
         'rl_dist': [rl_dist]
     })
-    line.to_csv("results/varying_tt.csv",  mode='a', header=False, index=False)
+    line.to_csv(f"results/{MODEL}/varying_tt.csv",  mode='a', header=False, index=False)
+
 
 while True:
     for Tt in [1000,100,1,50,200,300,400,500,700]:
         kwargs = {
-            'Ts': 1,
-            'Tt': Tt,
-            'N': 1000,
-            'stop_error': 1,
-            'prize': 0
+            'sample_cost': 1,
+            'movement_cost': Tt,
+            'N': 300
         }
 
         env = gym.make('change_point:uniform-v0', **kwargs)
-        # Optional: PPO1 requires a vectorized environment to run
-        # the env is now wrapped automatically when passing it to the constructor
-        # env = DummyVecEnv([lambda: env])
 
-        model = models[MODEL]('MlpPolicy', env, verbose=1)
+
+        model = models[MODEL]('MlpPolicy', env, verbose=1, gamma = 1)
 
         start_time = datetime.now()
-        for i in range(NSTEPS//2000):
-            model.learn(total_timesteps=2000)
+        model = model.learn(total_timesteps=NSTEPS)
         end_time = datetime.now()
         dif = end_time-start_time
         model.save(f"other/{MODEL}_Model")
 
-        rl_policy = get_rl_policy(model, 1000)
-        vi_policy = get_vi_policy(kwargs)
-        np.savetxt(f"results/{MODEL}_policy.csv", rl_policy)
-        plot_policy_vs_optimal(rl_policy, vi_policy, kwargs, dif)
+        rl_policy = get_rl_policy(env, model, kwargs['N'])
+        vi_policy = get_vi_policy("uniform",kwargs)
+        i = plot_policy_vs_optimal(rl_policy, vi_policy, kwargs, dif)
 
-        save_scores(rl_policy, vi_policy, dif)
+        save_scores(rl_policy, vi_policy, dif, i)
 
         env.close()
     NSTEPS *= 2

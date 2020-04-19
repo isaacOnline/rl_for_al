@@ -12,13 +12,13 @@ from abc import ABC, abstractmethod
 
 
 class ChangePoint(gym.Env, ABC):
-    def __init__(self, Ts, Tt, N, seed=None):
+    def __init__(self, sample_cost, movement_cost, N, seed=None):
         """
         :param stop_error:
         :param seed:
         """
         self.seed(seed)
-        self._set_args(Ts, Tt, N, seed)
+        self._set_args(sample_cost, movement_cost, N, seed)
         self._initialize_distribution()
         self._initialize_state()
         self.reset()
@@ -36,20 +36,20 @@ class ChangePoint(gym.Env, ABC):
         pass
 
     def _cost(self, action):
-        return self.Ts + self.Tt * action
+        return self.sample_cost + self.movement_cost * action
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def _set_args(self, Ts, Tt, N, seed):
-        self.Ts = Ts
-        self.Tt = Tt/N
+    def _set_args(self, sample_cost, movement_cost, N, seed):
+        self.sample_cost = sample_cost
+        self.movement_cost = movement_cost / N
         N = int(N)
         self.N = N
         self.delta = 1
         self.seed = seed
-        self.action_space = Discrete(self.N + 1)
+        self.action_space = Discrete(self.N)
 
     def reset(self):
         self.total_dist = 0
@@ -62,7 +62,7 @@ class ChangePoint(gym.Env, ABC):
         self._update_state()
         return self.S
 
-    def _get_movement(self, action):
+    def get_movement(self, S, N, action):
         """
         Converts an action into the actual distance that the agent will travel. Currently,
         actions correspond to fractions of the hypothesis space that the agent will travel,
@@ -74,10 +74,14 @@ class ChangePoint(gym.Env, ABC):
         :param action:
         :return:
         """
-        raw_travel_dist = action/self.N * self.S
-        rounded_travel_dist = np.ceil(raw_travel_dist)
-        if rounded_travel_dist == self.S:
+        raw_travel_dist = action/N * S
+        rounded_travel_dist = np.round(raw_travel_dist)
+
+        if rounded_travel_dist == 0:
+            rounded_travel_dist +=1
+        if rounded_travel_dist == S:
             rounded_travel_dist -= 1
+
         mvmt = rounded_travel_dist * self.direction
         return rounded_travel_dist, mvmt
 
@@ -86,7 +90,7 @@ class ChangePoint(gym.Env, ABC):
         self.location_hist += [self.location]
 
     def _move_agent(self, action: float):
-        dist, mvmt = self._get_movement(action)
+        dist, mvmt = self.get_movement(self.S, self.N, action)
         self._update_hist(dist)
         self.location += mvmt
         return dist

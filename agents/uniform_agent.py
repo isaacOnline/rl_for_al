@@ -15,6 +15,7 @@ class UniformAgent(ValueIterator):
         ValueIterator.__init__(self, N, sample_cost, movement_cost)
         self.policy = np.zeros(self.all_states.shape, dtype=np.int)
         self.state_values = np.zeros(self.all_states.shape)
+        self.calculate_policy()
 
     def _state_is_terminal(self, state):
         return state <= 1
@@ -25,8 +26,12 @@ class UniformAgent(ValueIterator):
     def save(self):
         plt.clf()
         plt.plot(self.all_states, np.array(self.policy.copy()).flatten())
-        save_path = f"visualizations/value_iterator/{self.movement_cost * self.N}_uniform.png"
-        self._save(save_path)
+        img_path = f"visualizations/value_iterator/{int(self.movement_cost * self.N)}_uniform.png"
+        self._save_image(img_path)
+        # Saved as truemovementcost_N_uniform.csv
+        policy_path = f"results/value_iterator/{int(self.movement_cost * self.N)}_{self.N}_uniform.csv"
+        np.savetxt(policy_path, self.policy)
+
 
     def _calculate_action_space(self, s):
         # Don't allow actions that would result in no change of the hypothesis space
@@ -40,8 +45,8 @@ class UniformAgent(ValueIterator):
 if __name__ == "__main__":
     stop_error = 1
     sample_cost = 1
-    movement_cost = 10
-    N = 10
+    movement_cost = 1
+    N = 300
     kwargs = {
         'Ts': sample_cost,
         'Tt': movement_cost,
@@ -50,8 +55,7 @@ if __name__ == "__main__":
 
 
     agnt = UniformAgent(N, movement_cost=movement_cost)
-    agnt.calculate_policy()
     agnt.save()
     flat_policy = np.array(agnt.policy).flatten()
 
-    scorer().score(flat_policy, gym.make("change_point:uniform-v0", **kwargs), trials = 100000)
+    # scorer().score(flat_policy, gym.make("change_point:uniform-v0", **kwargs), trials = 10000)
