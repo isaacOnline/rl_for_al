@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from agents.value_iterator import ValueIterator
 from scipy.stats import uniform
 from itertools import product
-from other.Scorer import scorer
+from other.scorer import NonUniformScorer
 import gym
 
 
@@ -29,6 +29,7 @@ class NonUniformAgent(ValueIterator):
         self.policy = np.zeros((N+1, N+1), dtype=np.int)
 
         self.state_values = np.zeros((N+1, N+1))
+        self.calculate_policy()
 
     def _state_is_terminal(self, state):
         return abs(state[0] - state[1]) <= 1
@@ -40,11 +41,7 @@ class NonUniformAgent(ValueIterator):
         return state_prime_prob / state_prob
 
     def save(self):
-        plt.clf()
-        plt.plot(range(11), self.policy[0])
         dist_name = self.dist.dist.name
-        save_path = f"visualizations/value_iterator/{self.movement_cost * self.N}_{dist_name}.png"
-        self._save_image(save_path)
         policy_path = f"results/value_iterator/{int(self.movement_cost * self.N)}_{self.N}_{dist_name}.csv"
         np.savetxt(policy_path, self.policy)
 
@@ -79,8 +76,6 @@ if __name__ == "__main__":
     }
 
     agnt = NonUniformAgent(N, movement_cost=movement_cost)
-    agnt.calculate_policy()
     agnt.save()
-    flat_policy = np.array(agnt.policy[0]).flatten()
-    scorer().score(flat_policy, gym.make("change_point:uniform-v0", **kwargs), trials = 100000)
+    NonUniformScorer().score(agnt.policy, gym.make("change_point:uniform-v0", **kwargs), trials = 100000)
 

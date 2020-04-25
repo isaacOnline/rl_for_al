@@ -5,7 +5,7 @@ import numpy as np
 
 # The default distribution here is truncated normal
 
-class NonuniformCP(ChangePoint):
+class NonUniformCP(ChangePoint):
     def _initialize_distribution(self, dist=None):
         if dist is None:
             # See https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html
@@ -16,7 +16,8 @@ class NonuniformCP(ChangePoint):
             sd = self.N * 0.1
             a = (min - mean) / sd
             b = (max - mean) / sd
-            self.dist = truncnorm(a, b, loc=mean,scale=sd)
+            dist = truncnorm(a, b, loc=mean,scale=sd)
+        self.dist = dist
 
     def _initialize_state(self):
         self.observation_space = MultiDiscrete([self.N+1, self.N+1])

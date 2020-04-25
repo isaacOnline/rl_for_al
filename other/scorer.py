@@ -1,17 +1,30 @@
-class scorer():
+from abc import ABC, abstractmethod
+
+class Scorer(ABC):
     def __init__(self):
         pass
 
-    def score(self, fout, env, trials = 10000):
+    @abstractmethod
+    def _standardize_observation(self, observation):
+        pass
+
+    @abstractmethod
+    def _get_hspace_len(self, observation):
+        pass
+
+    def score(self, policy, env, trials = 10000):
         observation = env.reset()
         total_dist = this_round_dist = 0
         total_num_samples = this_round_num_samples = 0
         total_reward = this_round_reward = 0
         num_runs = 0
-        N = len(fout) - 1
+        N = policy.shape[0] - 1
+
         while num_runs < trials:
-            true_mvmt = fout[int(observation)]
-            pct_into_hyp_space = int(true_mvmt / (observation / N))
+            observation = self._standardize_observation(observation)
+            h_space_len = self._get_hspace_len(observation)
+            true_mvmt = policy[observation]
+            pct_into_hyp_space = int(true_mvmt / (h_space_len / N))
             observation, reward, done, _ = env.step(pct_into_hyp_space)
             this_round_dist += true_mvmt
             this_round_num_samples += 1
@@ -36,3 +49,22 @@ class scorer():
         print(f'avg ns: {avg_ns}')
         print(f'avg dist: {avg_dist}')
         return avg_reward, avg_ns, avg_dist
+
+
+class UniformScorer(Scorer):
+    def _standardize_observation(self, observation):
+        return int(observation)
+
+    def _get_hspace_len(self, observation):
+        # observation is already hspace len
+        return observation
+
+
+class NonUniformScorer(Scorer):
+    def _standardize_observation(self, observation):
+        observation = (int(observation[0]), int(observation[1]))
+        return observation
+
+    def _get_hspace_len(self, observation):
+        # hspace is between min and max search point
+        return int(abs(observation[1] - observation[0]))

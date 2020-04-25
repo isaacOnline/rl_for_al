@@ -74,7 +74,7 @@ class ChangePoint(gym.Env, ABC):
         :param action:
         :return:
         """
-        if len(S.shape) > 1:
+        if len(S.shape) >= 1:
             S = abs(S[0] - S[1])
         raw_travel_dist = action/N * S
         rounded_travel_dist = np.round(raw_travel_dist)

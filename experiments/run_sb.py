@@ -3,7 +3,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from agents import UniformAgent
-from other.Scorer import scorer
+from other.scorer import UniformScorer
 from other.model_tester import ModelRunner
 
 
@@ -54,10 +54,10 @@ class UniformRunner(ModelRunner):
     def save_performance(self, rl_policy, vi_policy, run_time):
         rl_fout = rl_policy[:, 1]
         print("{}:".format(self.model_name))
-        rl_reward, rl_ns, rl_dist = scorer().score(rl_fout, self.env)
+        rl_reward, rl_ns, rl_dist = UniformScorer().score(rl_fout, self.env)
 
         print("\nValue Iteration:")
-        vi_reward, vi_ns, vi_dist = scorer().score(vi_policy, self.env)
+        vi_reward, vi_ns, vi_dist = UniformScorer().score(vi_policy, self.env)
 
         line = pd.DataFrame({
             "id": self.id,
@@ -74,13 +74,12 @@ class UniformRunner(ModelRunner):
             'rl_dist': [rl_dist],
             'N': self.params['N']
         })
-        line.to_csv(f"results/{self.model_name}/varying_tt.csv", mode='a', header=False, index=False)
+        line.to_csv(f"results/{self.model_name}/uniform.csv", mode='a', header=False, index=False)
 
 
 if __name__ == "__main__":
     model = "ACER"
-    env_name = "uniform"
-    nsteps = 300000
+    nsteps = 1000
     while True:
         for Tt in [1000, 750, 500, 400, 300, 200, 100, 50, 1]:
             kwargs = {
@@ -93,3 +92,4 @@ if __name__ == "__main__":
             runner.train()
             runner.save()
         # nsteps *= 2
+

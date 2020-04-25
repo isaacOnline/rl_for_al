@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from scipy.stats import truncnorm, uniform
 
 from agents import NonUniformAgent
-from other.Scorer import scorer
+from other.scorer import NonUniformScorer
 from other.model_tester import ModelRunner
 
 
@@ -17,7 +18,7 @@ class NonUniformRunner(ModelRunner):
     def get_vi_policy(self):
         try:
             policy = np.genfromtxt(
-                f"results/value_iterator/{self.params['movement_cost']}_{self.params['N']}_{self.dist_name}.csv")
+                f"results/value_iterator/{int(self.params['movement_cost'])}_{self.params['N']}_{self.dist_name}.csv")
         except:
             agnt = NonUniformAgent(sample_cost=self.params['sample_cost'],
                                    movement_cost=self.params['movement_cost'],
@@ -28,43 +29,45 @@ class NonUniformRunner(ModelRunner):
         return policy
 
     def get_rl_policy(self):
-        policy = []
+        policy = np.zeros((N+1, N+1), dtype=np.int)
         for first_end in range(0, self.params['N'] + 1):
             for second_end in range(0, self.params['N'] + 1):
                 obs = np.array([first_end, second_end])
+                # self.model.action_probability returns the stochastic policy, so we just find the most likely action
                 action = np.argmax(self.model.action_probability(obs))
                 mvmt, _ = self.env.get_movement(obs, self.params['N'], action)
-                policy.append([obs, mvmt])
-        policy = np.array(policy)
+                policy[first_end, second_end] = mvmt
         return policy
 
     def plot(self, rl_policy, vi_policy, run_time):
         plt.clf()
 
-        plt.plot(rl_policy[:, 0], rl_policy[:, 1], c='tab:orange', label=f"{self.model_name} Learner")
-        plt.plot(rl_policy[:, 0], vi_policy, c='B', label="Value Iteration")
+        difference = rl_policy - vi_policy
 
-        plt.title(
-            f"Train Time: {run_time}, tt/ts: {self.params['movement_cost']}/{self.params['sample_cost']}, N: {self.params['N']}")
-        plt.xlabel("Size of Hypothesis Space")
-        plt.ylabel("Movement into Hypothesis Space")
-        plt.legend()
+        fig, ax = plt.subplots()
+        im = ax.imshow(difference)
+        cbar = ax.figure.colorbar(im, ax=ax)
+        cbar.ax.set_ylabel(f"{self.model_name} Policy - Value Iteration Policy", rotation=-90, va="bottom")
 
-        plt.ylim((0, self.params['N']))
-        plt.xlim((0, self.params['N']))
+
+        plt.suptitle(
+            f"Train Time: {run_time} "
+            f"tt/ts: {self.params['movement_cost']}/{self.params['sample_cost']} "
+            f"N: {self.params['N']} "
+            f"Dist: {self.dist_name}")
 
         plt.savefig(self.img_path)
 
     def save_performance(self, rl_policy, vi_policy, run_time):
-        rl_fout = rl_policy[:, 1]
         print("{}:".format(self.model_name))
-        rl_reward, rl_ns, rl_dist = scorer().score(rl_fout, self.env)
+        rl_reward, rl_ns, rl_dist = NonUniformScorer().score(rl_policy, self.env)
 
         print("\nValue Iteration:")
-        vi_reward, vi_ns, vi_dist = scorer().score(vi_policy, self.env)
+        vi_reward, vi_ns, vi_dist = NonUniformScorer().score(vi_policy, self.env)
 
         line = pd.DataFrame({
             "id": self.id,
+            'N': self.params['N'],
             "time_steps": [self.nsteps],
             "train_time": [run_time],
             "model": [self.model_name],
@@ -75,25 +78,37 @@ class NonUniformRunner(ModelRunner):
             'vi_ns': [vi_ns],
             'rl_ns': [rl_ns],
             'vi_dist': [vi_dist],
-            'rl_dist': [rl_dist],
-            'N': self.params['N']
+            'rl_dist': [rl_dist]
         })
-        line.to_csv(f"results/{self.model_name}/varying_tt.csv", mode='a', header=False, index=False)
+        line.to_csv(f"results/{self.model_name}/non_uniform.csv", mode='a', header=False, index=False)
 
+def get_dist(N):
+    min = 0
+    max = N
+    mean = N * 0.5
+    sd = N * 0.1
+    a = (min - mean) / sd
+    b = (max - mean) / sd
+    dist = truncnorm(a, b, loc=mean, scale=sd)
+    return dist
+
+def get_unif(N):
+    return uniform(0, N)
 
 if __name__ == "__main__":
     model = "ACER"
-    env_name = "uniform"
     nsteps = 300000
+    N = 300
     while True:
         for Tt in [1000, 750, 500, 400, 300, 200, 100, 50, 1]:
             kwargs = {
                 'sample_cost': 1,
                 'movement_cost': Tt,
-                'N': 1000
+                'N': N,
+                'dist': get_dist(N)
             }
 
-            runner = UniformTester(model, nsteps, kwargs)
+            runner = NonUniformRunner(model, nsteps, kwargs)
             runner.train()
             runner.save()
         # nsteps *= 2
