@@ -30,13 +30,13 @@ class ModelRunner(ABC):
 
     def get_id(self):
         self.id = 0
-        self.img_path = f"visualizations/{self.model_name}/{self.env_name}_{self.id}.png"
+        self.img_path = f"experiments/vi_vs_rl/{self.env_name}/visualizations/{self.env_name}_{self.id}.png"
         while os.path.exists(self.img_path):
             self.id+=1
-            self.img_path = f"visualizations/{self.model_name}/{self.env_name}_{self.id}.png"
+            self.img_path = f"experiments/vi_vs_rl/{self.env_name}/visualizations/{self.env_name}_{self.id}.png"
 
     def start_logging(self):
-        self.log_path = f"logging/{self.model_name}_{self.env_name}/"
+        self.log_path = f"experiments/vi_vs_rl/{self.env_name}/logging/{self.model_name}_{self.env_name}/"
         if not os.path.exists(self.log_path):
             os.mkdir(self.log_path)
 
@@ -46,7 +46,7 @@ class ModelRunner(ABC):
         self.end_time = datetime.now()
 
     def save(self):
-        self.model.save(f"other/{self.model_name}_{self.env_name}_Model")
+        self.model.save(f"experiments/vi_vs_rl/{self.env_name}/model_objects/{self.model_name}_{self.id}")
         rl_policy = self.get_rl_policy()
         vi_policy = self.get_vi_policy()
         time_elapsed = self.end_time-self.start_time

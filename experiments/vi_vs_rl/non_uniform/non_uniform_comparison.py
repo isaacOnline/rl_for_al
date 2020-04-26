@@ -4,8 +4,8 @@ from matplotlib import pyplot as plt
 from scipy.stats import truncnorm, uniform
 
 from agents import NonUniformAgent
-from other.scorer import NonUniformScorer
-from other.model_tester import ModelRunner
+from base.scorer import NonUniformScorer
+from experiments.vi_vs_rl.model_runner import ModelRunner
 
 
 class NonUniformRunner(ModelRunner):
@@ -18,7 +18,7 @@ class NonUniformRunner(ModelRunner):
     def get_vi_policy(self):
         try:
             policy = np.genfromtxt(
-                f"results/value_iterator/{int(self.params['movement_cost'])}_{self.params['N']}_{self.dist_name}.csv")
+                f"experiments/vi_vs_rl/non_uniform/vi_policies/{int(self.params['movement_cost'])}_{self.params['N']}_{self.dist_name}.csv")
         except:
             agnt = NonUniformAgent(sample_cost=self.params['sample_cost'],
                                    movement_cost=self.params['movement_cost'],
@@ -77,10 +77,11 @@ class NonUniformRunner(ModelRunner):
             'rl_reward': [rl_reward],
             'vi_ns': [vi_ns],
             'rl_ns': [rl_ns],
-            'vi_dist': [vi_dist],
-            'rl_dist': [rl_dist]
+            'vi_distance': [vi_dist],
+            'rl_distance': [rl_dist],
+            'distribution': [self.dist_name]
         })
-        line.to_csv(f"results/{self.model_name}/non_uniform.csv", mode='a', header=False, index=False)
+        line.to_csv(f"experiments/vi_vs_rl/non_uniform/non_uniform_performance.csv", mode='a', header=False, index=False)
 
 def get_dist(N):
     min = 0
@@ -98,7 +99,7 @@ def get_unif(N):
 if __name__ == "__main__":
     model = "ACER"
     nsteps = 300000
-    N = 300
+    N = 1000
     while True:
         for Tt in [1000, 750, 500, 400, 300, 200, 100, 50, 1]:
             kwargs = {

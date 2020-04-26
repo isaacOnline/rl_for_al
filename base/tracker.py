@@ -1,11 +1,11 @@
 import os
 from csv import writer
 
-from agents import OptimalAgent
+from agents import UniformAgent
 
 
 class Tracker():
-    def __init__(self, agent: OptimalAgent):
+    def __init__(self, agent: UniformAgent):
         self.agent = agent
 
     @staticmethod

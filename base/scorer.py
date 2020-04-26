@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from tqdm import tqdm
 
 class Scorer(ABC):
     def __init__(self):
@@ -19,27 +20,28 @@ class Scorer(ABC):
         total_reward = this_round_reward = 0
         num_runs = 0
         N = policy.shape[0] - 1
+        with tqdm(total = trials) as pbar:
+            while num_runs < trials:
+                observation = self._standardize_observation(observation)
+                h_space_len = self._get_hspace_len(observation)
+                true_mvmt = policy[observation]
+                pct_into_hyp_space = int(true_mvmt / (h_space_len / N))
+                observation, reward, done, _ = env.step(pct_into_hyp_space)
+                this_round_dist += true_mvmt
+                this_round_num_samples += 1
+                this_round_reward += reward
+                if done:
+                    num_runs += 1
+                    total_dist += this_round_dist
+                    total_num_samples += this_round_num_samples
+                    total_reward += this_round_reward
+                    observation = env.reset()
 
-        while num_runs < trials:
-            observation = self._standardize_observation(observation)
-            h_space_len = self._get_hspace_len(observation)
-            true_mvmt = policy[observation]
-            pct_into_hyp_space = int(true_mvmt / (h_space_len / N))
-            observation, reward, done, _ = env.step(pct_into_hyp_space)
-            this_round_dist += true_mvmt
-            this_round_num_samples += 1
-            this_round_reward += reward
-            if done:
-                num_runs += 1
-                total_dist += this_round_dist
-                total_num_samples += this_round_num_samples
-                total_reward += this_round_reward
-                observation = env.reset()
-
-                # reset things we're keeping track of
-                this_round_dist = 0
-                this_round_num_samples = 0
-                this_round_reward = 0
+                    # reset things we're keeping track of
+                    this_round_dist = 0
+                    this_round_num_samples = 0
+                    this_round_reward = 0
+                    pbar.update()
 
         avg_reward = total_reward / num_runs
         avg_ns = total_num_samples / num_runs

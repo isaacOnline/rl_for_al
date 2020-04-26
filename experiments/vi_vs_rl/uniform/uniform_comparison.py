@@ -3,8 +3,8 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from agents import UniformAgent
-from other.scorer import UniformScorer
-from other.model_tester import ModelRunner
+from base.scorer import UniformScorer
+from experiments.vi_vs_rl.model_runner import ModelRunner
 
 
 class UniformRunner(ModelRunner):
@@ -15,7 +15,7 @@ class UniformRunner(ModelRunner):
     def get_vi_policy(self):
         try:
             policy = np.genfromtxt(
-                f"results/value_iterator/{self.params['movement_cost']}_{self.params['N']}_{self.env_name}.csv")
+                f"experiments/vi_vs_rl/uniform/vi_policies/{self.params['movement_cost']}_{self.params['N']}_{self.env_name}.csv")
         except:
             agnt = UniformAgent(sample_cost=self.params['sample_cost'],
                                 movement_cost=self.params['movement_cost'],
@@ -74,7 +74,7 @@ class UniformRunner(ModelRunner):
             'rl_dist': [rl_dist],
             'N': self.params['N']
         })
-        line.to_csv(f"results/{self.model_name}/uniform.csv", mode='a', header=False, index=False)
+        line.to_csv(f"experiments/vi_vs_rl/uniform/uniform_performance.csv", mode='a', header=False, index=False)
 
 
 if __name__ == "__main__":

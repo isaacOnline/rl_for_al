@@ -1,5 +1,5 @@
-from agents import OptimalAgent
-from other.tracker import Tracker
+from agents import UniformAgent
+from base.tracker import Tracker
 import time
 import pandas as pd
 import numpy as np
@@ -33,10 +33,9 @@ def changing_ts(num_samples):
     Tt = 1
     N = 1000
     for Ts in range(1, 1000):
-        agent = OptimalAgent(Ts, Tt, N, stopErr)
+        agent = UniformAgent(Ts, Tt, N)
         tracker = Tracker(agent)
         for sample in range(num_samples):
-            agent.fit()
             tracker.log_uniform()
         if Ts % 100 == 99:
             print("{0}: {1} values complete, {2} remaining".format(time.strftime("%-I:%M %p"),Ts+1,1000-Tt-1))
