@@ -2,7 +2,7 @@ import numpy as np
 
 from tqdm import tqdm
 from agents.value_iterator import ValueIterator
-from scipy.stats import uniform
+from scipy.stats import uniform, truncnorm
 from itertools import product
 from base.scorer import NonUniformScorer
 import gym
@@ -77,7 +77,7 @@ class NonUniformAgent(ValueIterator):
                                     Pst = (self.dist.cdf(location) - self.dist.cdf(new_location)) / state_prob
                                     # Pstc is the complement (theta between xx +/- aa and xh)
                                 Pstc = 1 - Pst
-                                ev = self.sample_cost + self.movement_cost * action / self.N + \
+                                ev = self.sample_cost + self.movement_cost * action+ \
                                      Pst * self.state_values[new_location, location] + \
                                      Pstc * self.state_values[new_location, opposite_bound]
                                 if ev < best_ev:
@@ -91,23 +91,32 @@ class NonUniformAgent(ValueIterator):
         policy_path = f"experiments/vi_vs_rl/non_uniform/vi_policies/{int(self.movement_cost * self.N)}_{self.N}_{dist_name}.csv"
         np.savetxt(policy_path, self.policy)
 
-
+def get_dist(N):
+    min = 0
+    max = N
+    mean = N * 0.5
+    sd = N * 0.1
+    a = (min - mean) / sd
+    b = (max - mean) / sd
+    dist = truncnorm(a, b, loc=mean, scale=sd)
+    return dist
 
 if __name__ == "__main__":
     sample_cost = 1
     movement_cost = 1
-    N = 10
-    dist=uniform(0,N)
+    N = 15
+    dist=get_dist(N)
     kwargs = {
         'sample_cost': sample_cost,
         'movement_cost': movement_cost,
         'N': N,
-        'seed': 5480275,
         'dist': dist
     }
 
 
     agnt = NonUniformAgent(N, movement_cost=movement_cost,dist=dist)
     agnt.save()
-    NonUniformScorer().score(agnt.policy, gym.make("change_point:non_uniform-v0", **kwargs), trials = 1000000)
+
+
+    NonUniformScorer().score(agnt.policy, gym.make("change_point:non_uniform-v0", **kwargs), trials = 10000)
 

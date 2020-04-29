@@ -1,3 +1,4 @@
+import numpy as np
 from abc import ABC, abstractmethod
 from tqdm import tqdm
 
@@ -25,8 +26,8 @@ class Scorer(ABC):
                 observation = self._standardize_observation(observation)
                 h_space_len = self._get_hspace_len(observation)
                 true_mvmt = policy[observation]
-                pct_into_hyp_space = int(true_mvmt / (h_space_len / N))
-                observation, reward, done, _ = env.step(pct_into_hyp_space)
+                gym_action = int(round(true_mvmt / (h_space_len / N)))
+                observation, reward, done, _ = env.step(gym_action)
                 this_round_dist += true_mvmt
                 this_round_num_samples += 1
                 this_round_reward += reward

@@ -79,17 +79,16 @@ class UniformRunner(ModelRunner):
 
 if __name__ == "__main__":
     model = "ACER"
-    nsteps = 1000
-    while True:
-        for Tt in [1000, 750, 500, 400, 300, 200, 100, 50, 1]:
-            kwargs = {
-                'sample_cost': 1,
-                'movement_cost': Tt,
-                'N': 1000
-            }
+    nsteps = 300000
+    for Tt in [1000, 750, 500, 400, 300, 200, 100, 50, 1]:
+        kwargs = {
+            'sample_cost': 1,
+            'movement_cost': Tt,
+            'N': 1000
+        }
 
-            runner = UniformRunner(model, nsteps, kwargs)
-            runner.train()
-            runner.save()
-        # nsteps *= 2
+        runner = UniformRunner(model, nsteps, kwargs)
+        runner.train()
+        runner.save()
+    # nsteps *= 2
 

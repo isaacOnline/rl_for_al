@@ -83,7 +83,7 @@ class NonUniformRunner(ModelRunner):
         })
         line.to_csv(f"experiments/vi_vs_rl/non_uniform/non_uniform_performance.csv", mode='a', header=False, index=False)
 
-def get_dist(N):
+def get_truncnorm(N):
     min = 0
     max = N
     mean = N * 0.5
@@ -98,18 +98,17 @@ def get_unif(N):
 
 if __name__ == "__main__":
     model = "ACER"
-    nsteps = 300000
-    N = 1000
-    while True:
-        for Tt in [1000, 750, 500, 400, 300, 200, 100, 50, 1]:
-            kwargs = {
-                'sample_cost': 1,
-                'movement_cost': Tt,
-                'N': N,
-                'dist': get_dist(N)
-            }
+    nsteps = 15000
+    N = 30
+    for Tt in [1]:
+        kwargs = {
+            'sample_cost': 1,
+            'movement_cost': Tt,
+            'N': N,
+            'dist': get_truncnorm(N)
+        }
 
-            runner = NonUniformRunner(model, nsteps, kwargs)
-            runner.train()
-            runner.save()
-        # nsteps *= 2
+        runner = NonUniformRunner(model, nsteps, kwargs)
+        runner.train()
+        runner.save()
+    # nsteps *= 2

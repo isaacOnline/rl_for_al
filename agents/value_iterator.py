@@ -1,9 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 
 
 class ValueIterator(object, metaclass=ABCMeta):

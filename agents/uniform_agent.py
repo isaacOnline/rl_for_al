@@ -21,7 +21,7 @@ class UniformAgent(ValueIterator):
 
 
         with tqdm(total = self.N * (self.N - 1) / 2) as progress:
-            for state in range(1, self.N + 1):
+            for state in range(2, self.N + 1):
                 best_value = np.inf
                 # loop over all states we can go to from state ss
                 for s_prime in range(1, state):
@@ -60,7 +60,7 @@ class UniformAgent(ValueIterator):
 if __name__ == "__main__":
     sample_cost = 1
     movement_cost = 1
-    N = 1000
+    N = 5
     kwargs = {
         'sample_cost': sample_cost,
         'movement_cost': movement_cost,
@@ -72,5 +72,5 @@ if __name__ == "__main__":
     agnt.save()
     flat_policy = np.array(agnt.policy).flatten()
 
-    UniformScorer().score(flat_policy, gym.make("change_point:uniform-v0", **kwargs), trials = 1000000)
+    UniformScorer().score(flat_policy, gym.make("change_point:uniform-v0", **kwargs), trials = 10000)
 

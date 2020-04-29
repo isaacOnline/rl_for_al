@@ -22,7 +22,6 @@ class ModelRunner(ABC):
         self.model_name = model_name
         self.params = env_params
         self.nsteps = nsteps
-        self.get_id()
         self.start_logging()
 
         self.env = gym.make( f"change_point:{self.env_name}-v0", **env_params)
@@ -30,6 +29,7 @@ class ModelRunner(ABC):
 
     def get_id(self):
         self.id = 0
+
         self.img_path = f"experiments/vi_vs_rl/{self.env_name}/visualizations/{self.env_name}_{self.id}.png"
         while os.path.exists(self.img_path):
             self.id+=1
@@ -42,13 +42,14 @@ class ModelRunner(ABC):
 
     def train(self):
         self.start_time = datetime.now()
-        self.model = self.model.learn(total_timesteps=self.nsteps, tb_log_name=str(self.id))
+        self.model = self.model.learn(total_timesteps=self.nsteps)
         self.end_time = datetime.now()
 
     def save(self):
-        self.model.save(f"experiments/vi_vs_rl/{self.env_name}/model_objects/{self.model_name}_{self.id}")
         rl_policy = self.get_rl_policy()
         vi_policy = self.get_vi_policy()
+        self.get_id()
+        self.model.save(f"experiments/vi_vs_rl/{self.env_name}/model_objects/{self.model_name}_{self.id}")
         time_elapsed = self.end_time-self.start_time
         self.plot(rl_policy, vi_policy, time_elapsed)
         self.save_performance(rl_policy, vi_policy, time_elapsed)
