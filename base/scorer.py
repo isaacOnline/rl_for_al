@@ -1,6 +1,7 @@
 import numpy as np
 from abc import ABC, abstractmethod
 from tqdm import tqdm
+import tensorflow as tf
 
 class Scorer(ABC):
     def __init__(self):
@@ -15,7 +16,9 @@ class Scorer(ABC):
         pass
 
     def score(self, policy, env, trials = 10000):
+        change_points = tf.Session().run(env.dist.sample((trials+1,)))
         observation = env.reset()
+        env.change_point = change_points[0]
         total_dist = this_round_dist = 0
         total_num_samples = this_round_num_samples = 0
         total_reward = this_round_reward = 0
@@ -27,6 +30,7 @@ class Scorer(ABC):
                 h_space_len = self._get_hspace_len(observation)
                 true_mvmt = policy[observation]
                 gym_action = int(round(true_mvmt / (h_space_len / N)))
+                assert true_mvmt == env.get_movement(np.array(observation), N, gym_action)[0]
                 observation, reward, done, _ = env.step(gym_action)
                 this_round_dist += true_mvmt
                 this_round_num_samples += 1
@@ -37,6 +41,7 @@ class Scorer(ABC):
                     total_num_samples += this_round_num_samples
                     total_reward += this_round_reward
                     observation = env.reset()
+                    env.change_point = change_points[num_runs]
 
                     # reset things we're keeping track of
                     this_round_dist = 0

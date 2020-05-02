@@ -1,3 +1,4 @@
+import gym
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -6,7 +7,7 @@ from scipy.stats import truncnorm, uniform
 from agents import NonUniformAgent
 from base.scorer import NonUniformScorer
 from experiments.vi_vs_rl.model_runner import ModelRunner
-
+import tensorflow_probability as tfp
 
 class NonUniformRunner(ModelRunner):
     def __init__(self, model_name, nsteps, env_params):
@@ -15,17 +16,26 @@ class NonUniformRunner(ModelRunner):
         self.dist_name = self.dist.dist.name
         ModelRunner.__init__(self, model_name, nsteps, env_params)
 
-    def get_vi_policy(self):
-        try:
-            policy = np.genfromtxt(
-                f"experiments/vi_vs_rl/non_uniform/vi_policies/{int(self.params['movement_cost'])}_{self.params['N']}_{self.dist_name}.csv")
-        except:
+    def get_vi_policy(self, recalculate):
+        # if we want to recalculate, do so, otherwise try to access a stored policy
+        if recalculate:
             agnt = NonUniformAgent(sample_cost=self.params['sample_cost'],
                                    movement_cost=self.params['movement_cost'],
                                    N=self.params['N'],
                                    dist=self.dist)
             agnt.save()
             policy = agnt.policy
+        else:
+            try:
+                policy = np.genfromtxt(
+                    f"experiments/vi_vs_rl/non_uniform/vi_policies/{int(self.params['movement_cost'])}_{self.params['N']}_{self.dist_name}.csv")
+            except:
+                agnt = NonUniformAgent(sample_cost=self.params['sample_cost'],
+                                       movement_cost=self.params['movement_cost'],
+                                       N=self.params['N'],
+                                       dist=self.dist)
+                agnt.save()
+                policy = agnt.policy
         return policy
 
     def get_rl_policy(self):
@@ -60,10 +70,15 @@ class NonUniformRunner(ModelRunner):
 
     def save_performance(self, rl_policy, vi_policy, run_time):
         print("{}:".format(self.model_name))
-        rl_reward, rl_ns, rl_dist = NonUniformScorer().score(rl_policy, self.env)
+        dist = tfp.distributions.TruncatedNormal(low=0, high=self.params['N'], scale=np.sqrt(self.params['N']*0.1), loc=np.sqrt(self.params['N']*0.5))
+        test_params = self.params
+        test_params['dist']=dist
+        test_params['tf']=True
+        env = gym.make( f"change_point:{self.env_name}-v0", **test_params)
+        rl_reward, rl_ns, rl_dist = NonUniformScorer().score(rl_policy, env)
 
         print("\nValue Iteration:")
-        vi_reward, vi_ns, vi_dist = NonUniformScorer().score(vi_policy, self.env)
+        vi_reward, vi_ns, vi_dist = NonUniformScorer().score(vi_policy, env)
 
         line = pd.DataFrame({
             "id": self.id,
@@ -87,7 +102,7 @@ def get_truncnorm(N):
     min = 0
     max = N
     mean = N * 0.5
-    sd = N * 0.1
+    sd = np.sqrt(N * 0.1)
     a = (min - mean) / sd
     b = (max - mean) / sd
     dist = truncnorm(a, b, loc=mean, scale=sd)
@@ -98,7 +113,7 @@ def get_unif(N):
 
 if __name__ == "__main__":
     model = "ACER"
-    nsteps = 15000
+    nsteps = 50000
     N = 30
     for Tt in [1]:
         kwargs = {
@@ -110,5 +125,5 @@ if __name__ == "__main__":
 
         runner = NonUniformRunner(model, nsteps, kwargs)
         runner.train()
-        runner.save()
+        runner.save(recalculate_vi = True)
     # nsteps *= 2

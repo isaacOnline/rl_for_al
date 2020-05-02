@@ -45,9 +45,9 @@ class ModelRunner(ABC):
         self.model = self.model.learn(total_timesteps=self.nsteps)
         self.end_time = datetime.now()
 
-    def save(self):
+    def save(self, recalculate_vi = False):
         rl_policy = self.get_rl_policy()
-        vi_policy = self.get_vi_policy()
+        vi_policy = self.get_vi_policy(recalculate_vi)
         self.get_id()
         self.model.save(f"experiments/vi_vs_rl/{self.env_name}/model_objects/{self.model_name}_{self.id}")
         time_elapsed = self.end_time-self.start_time
@@ -56,7 +56,7 @@ class ModelRunner(ABC):
 
 
     @abstractmethod
-    def get_vi_policy(self):
+    def get_vi_policy(self, recalculate):
         pass
 
     @abstractmethod

@@ -2,6 +2,8 @@ from change_point.envs.change_point import ChangePoint
 from scipy.stats import truncnorm
 from gym.spaces import MultiDiscrete
 import numpy as np
+import tensorflow_probability as tfp
+
 
 # The default distribution here is truncated normal
 
@@ -13,10 +15,13 @@ class NonUniformCP(ChangePoint):
             min = 0
             max = self.N
             mean = self.N * 0.5
-            sd = self.N * 0.1
+            sd = np.sqrt(self.N * 0.1)
             a = (min - mean) / sd
             b = (max - mean) / sd
-            dist = truncnorm(a, b, loc=mean,scale=sd)
+            if self.tf:
+                dist = tfp.distributions.TruncatedNormal(low=0, high=self.N, scale=sd, loc=mean)
+            else:
+                dist = truncnorm(a, b, loc=mean,scale=sd)
         self.dist = dist
 
     def _initialize_state(self):

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from gym.spaces import Discrete
 from gym.utils import seeding
 from abc import ABC, abstractmethod
+import tensorflow as tf
 
 # This is the base class for the change point problems
 # The only difference between the two change point environments right now
@@ -12,11 +13,12 @@ from abc import ABC, abstractmethod
 
 
 class ChangePoint(gym.Env, ABC):
-    def __init__(self, sample_cost, movement_cost, N, dist=None, seed=None):
+    def __init__(self, sample_cost, movement_cost, N, dist=None, seed=None, tf=False):
         """
         :param stop_error:
         :param seed:
         """
+        self.tf = tf
         self.seed(seed)
         self._set_args(sample_cost, movement_cost, N, seed)
         self._initialize_distribution(dist)
@@ -58,7 +60,10 @@ class ChangePoint(gym.Env, ABC):
         self.max_loc = self.N
         self.location_hist = []
         self.direction = 1
-        self.change_point = self.dist.rvs(1)[0]
+        if self.tf:
+            self.change_point = 0
+        else:
+            self.change_point = self.dist.rvs(1)[0]
         self._update_state()
         return self.S
 
@@ -109,7 +114,7 @@ class ChangePoint(gym.Env, ABC):
 
     def _correct_action(self, action:int):
         """
-        Do not allow 0/1000 as actions
+        Do not allow 0 or N as actions
         :param action:
         :return:
         """
@@ -138,13 +143,12 @@ class ChangePoint(gym.Env, ABC):
 
         self._update_state()
 
-        if np.abs(self.location - self.change_point) < 1:
+        if np.abs(self.location - self.change_point) <= 1:
             done = True
-            reward = -1 * self._cost(dist)
         else:
             done = False
-            reward = -1 * self._cost(dist)
 
+        reward = -1 * self._cost(dist)
         return self.S, reward, done, self._get_info()
 
     def render(self, mode='human'):

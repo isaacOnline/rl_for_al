@@ -11,19 +11,10 @@ import gym
 class NonUniformAgent(ValueIterator):
     def __init__(self, N, sample_cost = 1, movement_cost = 1000, dist = None):
         # Dist must be an object with a cdf function
-
-        # Only let there be 1/self.stop_error + 1 number of states, since it doesn't make sense to have a state that is
-        # smaller than the stop error. I'm still going to round the states, because otherwise the state space isn't
-        # discrete.
         if dist is None:
             self.dist = uniform(0, N)
         else:
             self.dist = dist
-
-        self.all_states = np.array(list(product(np.linspace(0, N, N + 1, dtype=np.int),
-                                  np.linspace(0, N, N + 1, dtype=np.int))))
-        self.all_states = self.all_states[np.argsort(np.abs(self.all_states[:,0] - self.all_states[:,1]))]
-        self.all_states = [tuple(s) for s in self.all_states]
 
         ValueIterator.__init__(self, N, sample_cost, movement_cost)
         self.policy = np.zeros((N+1, N+1), dtype=np.int)
@@ -42,7 +33,7 @@ class NonUniformAgent(ValueIterator):
         with tqdm(total=num_iterations) as pbar:
             for h_space_len in range(self.N + 1):
                 # loop over possible current locations
-                for location in range(self.N):
+                for location in range(self.N + 1):
                     # calculate possible values of xh
                     opposite_bounds = []
                     if location - h_space_len >= 0:
@@ -95,7 +86,7 @@ def get_dist(N):
     min = 0
     max = N
     mean = N * 0.5
-    sd = N * 0.1
+    sd = np.sqrt(N * 0.1)
     a = (min - mean) / sd
     b = (max - mean) / sd
     dist = truncnorm(a, b, loc=mean, scale=sd)
@@ -104,7 +95,7 @@ def get_dist(N):
 if __name__ == "__main__":
     sample_cost = 1
     movement_cost = 1
-    N = 15
+    N = 3
     dist=get_dist(N)
     kwargs = {
         'sample_cost': sample_cost,
