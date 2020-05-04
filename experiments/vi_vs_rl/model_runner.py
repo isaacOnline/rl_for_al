@@ -22,6 +22,7 @@ class ModelRunner(ABC):
         self.model_name = model_name
         self.params = env_params
         self.nsteps = nsteps
+        self.get_id()
         self.start_logging()
 
         self.env = gym.make( f"change_point:{self.env_name}-v0", **env_params)
@@ -30,29 +31,31 @@ class ModelRunner(ABC):
     def get_id(self):
         self.id = 0
 
-        self.img_path = f"experiments/vi_vs_rl/{self.env_name}/visualizations/{self.env_name}_{self.id}.png"
+        self.img_path = f"experiments/vi_vs_rl/{self.env_name}/visualizations/{self.dist_name}_{self.id}.png"
         while os.path.exists(self.img_path):
             self.id+=1
-            self.img_path = f"experiments/vi_vs_rl/{self.env_name}/visualizations/{self.env_name}_{self.id}.png"
+            self.img_path = f"experiments/vi_vs_rl/{self.env_name}/visualizations/{self.dist_name}_{self.id}.png"
+        open(self.img_path, "a").close()
 
     def start_logging(self):
-        self.log_path = f"experiments/vi_vs_rl/{self.env_name}/logging/{self.model_name}_{self.env_name}/"
+        self.log_path = f"experiments/vi_vs_rl/{self.env_name}/logging/{self.dist_name}_{self.id}/"
         if not os.path.exists(self.log_path):
             os.mkdir(self.log_path)
 
     def train(self):
-        self.start_time = datetime.now()
+        start_time = datetime.now()
         self.model = self.model.learn(total_timesteps=self.nsteps)
-        self.end_time = datetime.now()
+        end_time = datetime.now()
+        self.rl_train_time = end_time - start_time
 
-    def save(self, recalculate_vi = False):
+    def save(self, message = None, recalculate_vi = False):
         rl_policy = self.get_rl_policy()
         vi_policy = self.get_vi_policy(recalculate_vi)
-        self.get_id()
-        self.model.save(f"experiments/vi_vs_rl/{self.env_name}/model_objects/{self.model_name}_{self.id}")
-        time_elapsed = self.end_time-self.start_time
-        self.plot(rl_policy, vi_policy, time_elapsed)
-        self.save_performance(rl_policy, vi_policy, time_elapsed)
+        self.model.save(f"experiments/vi_vs_rl/{self.env_name}/model_objects/{self.dist_name}_{self.id}")
+        if message:
+            print(message)
+        self.save_performance(rl_policy, vi_policy)
+        self.plot(rl_policy, vi_policy)
 
 
     @abstractmethod
@@ -64,9 +67,9 @@ class ModelRunner(ABC):
         pass
 
     @abstractmethod
-    def plot(self, rl_policy, vi_policy, dif):
+    def plot(self, rl_policy, vi_policy):
         pass
 
     @abstractmethod
-    def save_performance(self, rl_policy, vi_policy, dif):
+    def save_performance(self, rl_policy, vi_policy):
         pass

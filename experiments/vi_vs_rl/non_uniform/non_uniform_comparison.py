@@ -23,17 +23,17 @@ class NonUniformRunner(ModelRunner):
                                    movement_cost=self.params['movement_cost'],
                                    N=self.params['N'],
                                    dist=self.dist)
+            self.vi_train_time = agnt.calculate_policy()
             agnt.save()
             policy = agnt.policy
         else:
             try:
                 policy = np.genfromtxt(
                     f"experiments/vi_vs_rl/non_uniform/vi_policies/{int(self.params['movement_cost'])}_{self.params['N']}_{self.dist_name}.csv")
+                self.vi_train_time = "Not Calculated"
             except:
-                agnt = NonUniformAgent(sample_cost=self.params['sample_cost'],
-                                       movement_cost=self.params['movement_cost'],
-                                       N=self.params['N'],
-                                       dist=self.dist)
+                agnt = NonUniformAgent(**self.params)
+                self.vi_train_time = agnt.calculate_policy()
                 agnt.save()
                 policy = agnt.policy
         return policy
@@ -49,47 +49,49 @@ class NonUniformRunner(ModelRunner):
                 policy[first_end, second_end] = mvmt
         return policy
 
-    def plot(self, rl_policy, vi_policy, run_time):
+    def plot(self, rl_policy, vi_policy):
         plt.clf()
 
-        difference = rl_policy - vi_policy
+        fig, (vi_ax, rl_ax,cbar_ax) = plt.subplots(1,3,gridspec_kw={'width_ratios': [20,20, 1]})
+        vi_im = vi_ax.imshow(vi_policy, vmin = 0, vmax = self.params['N'])
+        rl_im = rl_ax.imshow(rl_policy, vmin = 0, vmax = self.params['N'])
+        cbar_im = fig.colorbar(rl_im, ax=rl_ax, cax=cbar_ax)
+        cbar_im.ax.set_ylabel("Movement On Line", rotation=-90, va="bottom")
 
-        fig, ax = plt.subplots()
-        im = ax.imshow(difference)
-        cbar = ax.figure.colorbar(im, ax=ax)
-        cbar.ax.set_ylabel(f"{self.model_name} Policy - Value Iteration Policy", rotation=-90, va="bottom")
-
+        vi_ax.set_title(f"VI Policy\nTrain Time: {self.vi_train_time}\nAvg Reward: {round(self.vi_reward,2)}")
+        rl_ax.set_title(f"ACER Policy\nTrain Time: {self.rl_train_time}\nAvg Reward: {round(self.rl_reward,2)}")
 
         plt.suptitle(
-            f"Train Time: {run_time} "
-            f"tt/ts: {self.params['movement_cost']}/{self.params['sample_cost']} "
-            f"N: {self.params['N']} "
+            f"tt/ts: {self.params['movement_cost']}/{self.params['sample_cost']}\n"
+            f"N: {self.params['N']}\n"
             f"Dist: {self.dist_name}")
 
         plt.savefig(self.img_path)
 
-    def save_performance(self, rl_policy, vi_policy, run_time):
+    def save_performance(self, rl_policy, vi_policy):
+        print(f"N: {self.params['N']} NSTEPS: {self.nsteps} Tt: {self.params['movement_cost']}")
         print("{}:".format(self.model_name))
-        dist = tfp.distributions.TruncatedNormal(low=0, high=self.params['N'], scale=np.sqrt(self.params['N']*0.1), loc=np.sqrt(self.params['N']*0.5))
+        dist = tfp.distributions.TruncatedNormal(low=0, high=self.params['N'], scale=np.sqrt(self.params['N']*0.1), loc=self.params['N']/2)
         test_params = self.params
         test_params['dist']=dist
         test_params['tf']=True
         env = gym.make( f"change_point:{self.env_name}-v0", **test_params)
-        rl_reward, rl_ns, rl_dist = NonUniformScorer().score(rl_policy, env)
+        self.rl_reward, rl_ns, rl_dist = NonUniformScorer().score(rl_policy, env)
 
         print("\nValue Iteration:")
-        vi_reward, vi_ns, vi_dist = NonUniformScorer().score(vi_policy, env)
+        self.vi_reward, vi_ns, vi_dist = NonUniformScorer().score(vi_policy, env)
 
         line = pd.DataFrame({
             "id": self.id,
             'N': self.params['N'],
             "time_steps": [self.nsteps],
-            "train_time": [run_time],
+            "vi_train_time":[self.vi_train_time],
+            "rl_train_time": [self.rl_train_time],
             "model": [self.model_name],
             'Ts': self.params['sample_cost'],
             'Tt': self.params['movement_cost'],
-            'vi_reward': [vi_reward],
-            'rl_reward': [rl_reward],
+            'vi_reward': [self.vi_reward],
+            'rl_reward': [self.rl_reward],
             'vi_ns': [vi_ns],
             'rl_ns': [rl_ns],
             'vi_distance': [vi_dist],
@@ -102,10 +104,12 @@ def get_truncnorm(N):
     min = 0
     max = N
     mean = N * 0.5
-    sd = np.sqrt(N * 0.1)
-    a = (min - mean) / sd
-    b = (max - mean) / sd
-    dist = truncnorm(a, b, loc=mean, scale=sd)
+    paper_var = 0.1
+    paper_sd = np.sqrt(paper_var)
+    this_dist_sd = paper_sd * N
+    a = (min - mean) / this_dist_sd
+    b = (max - mean) / this_dist_sd
+    dist = truncnorm(a, b, loc=mean, scale=this_dist_sd)
     return dist
 
 def get_unif(N):
@@ -113,9 +117,9 @@ def get_unif(N):
 
 if __name__ == "__main__":
     model = "ACER"
-    nsteps = 50000
-    N = 30
-    for Tt in [1]:
+    nsteps = 1000000
+    N = 300
+    for Tt in [1, 10, 50, 100, 250, 500, 750, 1000]:
         kwargs = {
             'sample_cost': 1,
             'movement_cost': Tt,
@@ -125,5 +129,5 @@ if __name__ == "__main__":
 
         runner = NonUniformRunner(model, nsteps, kwargs)
         runner.train()
-        runner.save(recalculate_vi = True)
+        runner.save()
     # nsteps *= 2

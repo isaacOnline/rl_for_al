@@ -56,6 +56,7 @@ class ChangePoint(gym.Env, ABC):
     def reset(self):
         self.total_dist = 0
         self.location = 0
+        self.opposite_bound = self.N
         self.min_loc = 0
         self.max_loc = self.N
         self.location_hist = []
@@ -129,21 +130,20 @@ class ChangePoint(gym.Env, ABC):
         action = self._correct_action(action)
         dist = self._move_agent(action)
 
-        # See if change point is to left or right
-        relative_location = self.location < self.change_point
-
         # If change point is to the right of location, make direction positive, else negative
         # Also update where agent is searching
-        if relative_location == 1:
+        if self.location < self.change_point:
             self.direction = 1
             self.min_loc = self.location
+            self.opposite_bound = self.max_loc
         else:
             self.direction = -1
             self.max_loc = self.location
+            self.opposite_bound = self.min_loc
 
         self._update_state()
 
-        if np.abs(self.location - self.change_point) <= 1:
+        if self.h_space_len == 1:
             done = True
         else:
             done = False

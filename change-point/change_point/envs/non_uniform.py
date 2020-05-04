@@ -19,7 +19,7 @@ class NonUniformCP(ChangePoint):
             a = (min - mean) / sd
             b = (max - mean) / sd
             if self.tf:
-                dist = tfp.distributions.TruncatedNormal(low=0, high=self.N, scale=sd, loc=mean)
+                dist = tfp.distributions.TruncatedNormal(low=min, high=max, scale=sd, loc=mean)
             else:
                 dist = truncnorm(a, b, loc=mean,scale=sd)
         self.dist = dist
@@ -28,4 +28,5 @@ class NonUniformCP(ChangePoint):
         self.observation_space = MultiDiscrete([self.N+1, self.N+1])
 
     def _update_state(self):
-        self.S = np.array([self.min_loc, self.max_loc])
+        self.S = np.array([self.location, self.opposite_bound])
+        self.h_space_len = self.max_loc - self.min_loc

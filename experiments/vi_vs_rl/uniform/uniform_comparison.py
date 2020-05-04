@@ -10,6 +10,7 @@ from experiments.vi_vs_rl.model_runner import ModelRunner
 class UniformRunner(ModelRunner):
     def __init__(self, model_name, nsteps, env_params):
         self.env_name = "uniform"
+        self.dist_name = "uniform"
         ModelRunner.__init__(self, model_name, nsteps, env_params)
 
     def get_vi_policy(self):

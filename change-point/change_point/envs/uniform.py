@@ -17,3 +17,4 @@ class UniformCP(ChangePoint):
     def _update_state(self):
         length = self.max_loc - self.min_loc
         self.S = np.array(length)
+        self.h_space_len = length
