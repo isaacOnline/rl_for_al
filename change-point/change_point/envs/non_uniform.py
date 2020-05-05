@@ -18,10 +18,7 @@ class NonUniformCP(ChangePoint):
             sd = np.sqrt(self.N * 0.1)
             a = (min - mean) / sd
             b = (max - mean) / sd
-            if self.tf:
-                dist = tfp.distributions.TruncatedNormal(low=min, high=max, scale=sd, loc=mean)
-            else:
-                dist = truncnorm(a, b, loc=mean,scale=sd)
+            dist = truncnorm(a, b, loc=mean,scale=sd)
         self.dist = dist
 
     def _initialize_state(self):

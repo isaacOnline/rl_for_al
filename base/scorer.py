@@ -16,9 +16,7 @@ class Scorer(ABC):
         pass
 
     def score(self, policy, env, trials = 10000):
-        change_points = tf.Session().run(env.dist.sample((trials+1,)))
         observation = env.reset()
-        env.change_point = change_points[0]
         total_dist = this_round_dist = 0
         total_num_samples = this_round_num_samples = 0
         total_reward = this_round_reward = 0
@@ -41,7 +39,6 @@ class Scorer(ABC):
                     total_num_samples += this_round_num_samples
                     total_reward += this_round_reward
                     observation = env.reset()
-                    env.change_point = change_points[num_runs]
 
                     # reset things we're keeping track of
                     this_round_dist = 0

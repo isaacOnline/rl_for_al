@@ -7,7 +7,6 @@ from scipy.stats import truncnorm, uniform
 from agents import NonUniformAgent
 from base.scorer import NonUniformScorer
 from experiments.vi_vs_rl.model_runner import ModelRunner
-import tensorflow_probability as tfp
 
 class NonUniformRunner(ModelRunner):
     def __init__(self, model_name, nsteps, env_params):
@@ -71,15 +70,10 @@ class NonUniformRunner(ModelRunner):
     def save_performance(self, rl_policy, vi_policy):
         print(f"N: {self.params['N']} NSTEPS: {self.nsteps} Tt: {self.params['movement_cost']}")
         print("{}:".format(self.model_name))
-        dist = tfp.distributions.TruncatedNormal(low=0, high=self.params['N'], scale=np.sqrt(self.params['N']*0.1), loc=self.params['N']/2)
-        test_params = self.params
-        test_params['dist']=dist
-        test_params['tf']=True
-        env = gym.make( f"change_point:{self.env_name}-v0", **test_params)
-        self.rl_reward, rl_ns, rl_dist = NonUniformScorer().score(rl_policy, env)
+        self.rl_reward, rl_ns, rl_dist = NonUniformScorer().score(rl_policy, self.env)
 
         print("\nValue Iteration:")
-        self.vi_reward, vi_ns, vi_dist = NonUniformScorer().score(vi_policy, env)
+        self.vi_reward, vi_ns, vi_dist = NonUniformScorer().score(vi_policy, self.env)
 
         line = pd.DataFrame({
             "id": self.id,
@@ -117,17 +111,22 @@ def get_unif(N):
 
 if __name__ == "__main__":
     model = "ACER"
-    nsteps = 1000000
-    N = 300
-    for Tt in [1, 10, 50, 100, 250, 500, 750, 1000]:
-        kwargs = {
-            'sample_cost': 1,
-            'movement_cost': Tt,
-            'N': N,
-            'dist': get_truncnorm(N)
-        }
+    nsteps = 1
+    N = 10
+    reward = -10
+    while reward < -5.30:
+        for Tt in [1]: #, 10, 50, 100, 250, 500, 750, 1000
 
-        runner = NonUniformRunner(model, nsteps, kwargs)
-        runner.train()
-        runner.save()
-    # nsteps *= 2
+            kwargs = {
+                'sample_cost': 1,
+                'movement_cost': Tt,
+                'N': N,
+                'dist': get_truncnorm(N)
+            }
+
+            runner = NonUniformRunner(model, nsteps, kwargs)
+            runner.train()
+            runner.save()
+            reward = runner.rl_reward
+        nsteps *= 1.25
+        nsteps = int(nsteps)

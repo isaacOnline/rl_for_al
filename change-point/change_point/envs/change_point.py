@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 from gym.spaces import Discrete
 from gym.utils import seeding
 from abc import ABC, abstractmethod
-import tensorflow as tf
 
 # This is the base class for the change point problems
 # The only difference between the two change point environments right now
@@ -13,12 +12,11 @@ import tensorflow as tf
 
 
 class ChangePoint(gym.Env, ABC):
-    def __init__(self, sample_cost, movement_cost, N, dist=None, seed=None, tf=False):
+    def __init__(self, sample_cost, movement_cost, N, dist=None, seed=None):
         """
         :param stop_error:
         :param seed:
         """
-        self.tf = tf
         self.seed(seed)
         self._set_args(sample_cost, movement_cost, N, seed)
         self._initialize_distribution(dist)
@@ -61,10 +59,7 @@ class ChangePoint(gym.Env, ABC):
         self.max_loc = self.N
         self.location_hist = []
         self.direction = 1
-        if self.tf:
-            self.change_point = 0
-        else:
-            self.change_point = self.dist.rvs(1)[0]
+        self.change_point = self.dist.rvs(1)[0]
         self._update_state()
         return self.S
 

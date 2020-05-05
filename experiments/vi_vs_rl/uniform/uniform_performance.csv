@@ -1,1 +1,1 @@
-id,time_steps,train_time,model,Ts,Tt,vi_reward,rl_reward,vi_ns,rl_ns,vi_dist,rl_dist,N
+id,time_steps,vi_train_time, rl_train_time,model,Ts,Tt,vi_reward,rl_reward,vi_ns,rl_ns,vi_distance,rl_distance,N
