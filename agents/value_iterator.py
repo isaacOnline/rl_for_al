@@ -4,19 +4,25 @@ import matplotlib.pyplot as plt
 
 
 class ValueIterator(object, metaclass=ABCMeta):
-    def __init__(self, N, sample_cost = 1, movement_cost = 1000):
-        self.N = N
+    def __init__(self, delta, epsilon, sample_cost = 1, movement_cost = 1000):
+        if epsilon is None:
+            self.epsilon = delta
+        else:
+            self.epsilon = epsilon
+
+        self.N = round(1/delta)
+        self.delta = delta
 
         self.sample_cost = sample_cost
-        self.movement_cost = movement_cost / N
+        self.movement_cost = movement_cost
 
 
     def _save_image(self, save_path):
         plt.title(f"tt/ts: {int(self.movement_cost * self.N)}/{self.sample_cost}, N: {self.N}")
         plt.xlabel("Size of Hypothesis Space")
-        plt.xlim([0,self.N])
+        plt.xlim([0,1])
         plt.ylabel("Movement into Hypothesis Space")
-        plt.ylim([0,self.N])
+        plt.ylim([0,1])
         plt.savefig(save_path)
 
 

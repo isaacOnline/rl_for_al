@@ -21,15 +21,17 @@ class Scorer(ABC):
         total_num_samples = this_round_num_samples = 0
         total_reward = this_round_reward = 0
         num_runs = 0
-        N = policy.shape[0] - 1
+        N = len(policy) - 1
+        delta = 1/N
         with tqdm(total = trials) as pbar:
             while num_runs < trials:
                 observation = self._standardize_observation(observation)
-                h_space_len = self._get_hspace_len(observation)
-                true_mvmt = policy[observation]
-                gym_action = int(round(true_mvmt / (h_space_len / N)))
-                assert true_mvmt == env.get_movement(np.array(observation), N, gym_action)[0]
-                observation, reward, done, _ = env.step(gym_action)
+
+                index = int(round(observation/delta)) # the policy is stored sequentially, so just finding how many deltas make up the current obs
+                action = int(policy[index])
+                true_mvmt = env.get_movement(action)[0]
+                #assert np.close(true_mvmt env.get_movement(mvmt)[0])
+                observation, reward, done, _ = env.step(action)
                 this_round_dist += true_mvmt
                 this_round_num_samples += 1
                 this_round_reward += reward
@@ -58,7 +60,7 @@ class Scorer(ABC):
 
 class UniformScorer(Scorer):
     def _standardize_observation(self, observation):
-        return int(observation)
+        return observation
 
     def _get_hspace_len(self, observation):
         # observation is already hspace len

@@ -9,11 +9,11 @@ from base.scorer import NonUniformScorer
 from experiments.vi_vs_rl.model_runner import ModelRunner
 
 class NonUniformRunner(ModelRunner):
-    def __init__(self, model_name, nsteps, env_params):
+    def __init__(self, model_name, nsteps, reward_threshold=None, env_params=None):
         self.env_name = "non_uniform"
         self.dist = env_params['dist']
         self.dist_name = self.dist.dist.name
-        ModelRunner.__init__(self, model_name, nsteps, env_params)
+        ModelRunner.__init__(self, model_name, nsteps, reward_threshold, env_params)
 
     def get_vi_policy(self, recalculate):
         # if we want to recalculate, do so, otherwise try to access a stored policy
@@ -44,7 +44,7 @@ class NonUniformRunner(ModelRunner):
                 obs = np.array([first_end, second_end])
                 # self.model.action_probability returns the stochastic policy, so we just find the most likely action
                 action = np.argmax(self.model.action_probability(obs))
-                mvmt, _ = self.env.get_movement(obs, self.params['N'], action)
+                mvmt, _ = self.env.get_movement(action)
                 policy[first_end, second_end] = mvmt
         return policy
 
@@ -94,39 +94,35 @@ class NonUniformRunner(ModelRunner):
         })
         line.to_csv(f"experiments/vi_vs_rl/non_uniform/non_uniform_performance.csv", mode='a', header=False, index=False)
 
-def get_truncnorm(N):
+def get_truncnorm():
+    # See https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html
+    # for description of how truncnorm is being used
     min = 0
-    max = N
-    mean = N * 0.5
-    paper_var = 0.1
-    paper_sd = np.sqrt(paper_var)
-    this_dist_sd = paper_sd * N
-    a = (min - mean) / this_dist_sd
-    b = (max - mean) / this_dist_sd
-    dist = truncnorm(a, b, loc=mean, scale=this_dist_sd)
+    max = 1
+    mean = 0.5
+    sd = np.sqrt(0.1)
+    a = (min - mean) / sd
+    b = (max - mean) / sd
+    dist = truncnorm(a, b, loc=mean, scale=sd)
     return dist
 
-def get_unif(N):
-    return uniform(0, N)
+def get_unif():
+    return uniform(0, 1)
 
 if __name__ == "__main__":
     model = "ACER"
-    nsteps = 1
-    N = 10
-    reward = -10
-    while reward < -5.30:
-        for Tt in [1]: #, 10, 50, 100, 250, 500, 750, 1000
+    nsteps = 100000000
+    N = 300
+    reward_threshold = -5.05
+    for Tt in [1]: #, 10, 50, 100, 250, 500, 750, 1000
 
-            kwargs = {
-                'sample_cost': 1,
-                'movement_cost': Tt,
-                'N': N,
-                'dist': get_truncnorm(N)
-            }
+        kwargs = {
+            'sample_cost': 1,
+            'movement_cost': Tt,
+            'N': N,
+            'dist': get_truncnorm()
+        }
 
-            runner = NonUniformRunner(model, nsteps, kwargs)
-            runner.train()
-            runner.save()
-            reward = runner.rl_reward
-        nsteps *= 1.25
-        nsteps = int(nsteps)
+        runner = NonUniformRunner(model, nsteps, reward_threshold, kwargs)
+        runner.train()
+        runner.save()
