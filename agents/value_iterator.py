@@ -18,7 +18,7 @@ class ValueIterator(object, metaclass=ABCMeta):
 
 
     def _save_image(self, save_path):
-        plt.title(f"tt/ts: {int(self.movement_cost * self.N)}/{self.sample_cost}, N: {self.N}")
+        plt.title(f"tt/ts: {self.movement_cost}/{self.sample_cost}, N: {self.N}")
         plt.xlabel("Size of Hypothesis Space")
         plt.xlim([0,1])
         plt.ylabel("Movement into Hypothesis Space")

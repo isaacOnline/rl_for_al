@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-
 from agents import UniformAgent
 from base.scorer import UniformScorer
 from experiments.vi_vs_rl.model_runner import ModelRunner
@@ -21,7 +20,7 @@ class UniformRunner(ModelRunner):
             try:
                 policy = np.genfromtxt(
                     f"experiments/vi_vs_rl/uniform/vi_policies/{self.params['movement_cost']}_"
-                    f"{int(1/self.params['delta'])}_"
+                    f"{round(1/self.params['delta'])}_"
                     f"{self.env_name}.csv"
                 )
                 self.vi_train_time = "Not Calculated"
@@ -41,7 +40,7 @@ class UniformRunner(ModelRunner):
     def get_rl_policy(self):
         policy = []
         N = round(1/(self.params['delta']))
-        for i in np.linspace(0,1, N + 1):
+        for i in range(N + 1):
             obs = np.array(i)
             obs.shape = (1,)
             action = np.argmax(self.model.action_probability(obs))
@@ -100,12 +99,10 @@ class UniformRunner(ModelRunner):
 
 
 if __name__ == "__main__":
-
-
     model = "ACER"
-    nsteps = 6000000
-    N = 1000
-    Tts = np.array([1000,  750,  500,  400,  300,  200,  100,   50, 1])
+    nsteps = 20000
+    N = 5
+    Tts = np.array([1, 50, 200, 300, 400, 500, 750, 1000])
     for Tt in Tts:
         kwargs = {
             'sample_cost': 1,
@@ -113,7 +110,7 @@ if __name__ == "__main__":
             'delta': 1/N
         }
 
-        runner = UniformRunner(model, nsteps, False, kwargs)
+        runner = UniformRunner(model, nsteps, True, kwargs)
         runner.train()
         runner.save()
         # if score is close enough, end

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from agents.value_iterator import ValueIterator
 from tqdm import tqdm
 from base.scorer import UniformScorer
+from datetime import datetime
 
 class UniformAgent(ValueIterator):
     def __init__(self, delta, epsilon = None, sample_cost = 1, movement_cost = 1000):
@@ -11,9 +12,9 @@ class UniformAgent(ValueIterator):
         self.all_states = np.linspace(0, 1, self.N + 1, dtype=np.float64)
         self.policy = np.zeros(self.all_states.shape, dtype=np.int)
         self.state_values = np.zeros(self.all_states.shape)
-        self.calculate_policy()
 
     def calculate_policy(self):
+        start = datetime.now()
         # initialize value, number of samples, and distance for each state
         # states are possible lengths of hypothesis space, so there are N total
         # Off by one here?
@@ -24,8 +25,8 @@ class UniformAgent(ValueIterator):
         dist = [0] * (self.N + 1)  # distance to termination from this state
         gp = [0] * (self.N + 1) # numbers to feed to gym, which are scaled as portions of the hyp space to travel
 
-        # terminal states are those smaller than stopErr
-        T = np.where(S < self.epsilon)[0]
+        # terminal states are those smaller/eq  stopErr
+        T = np.where(S <= self.epsilon)[0]
 
         # loop over non-terminal states
         for ss in range(T[-1] + 1, self.N + 1):
@@ -50,11 +51,13 @@ class UniformAgent(ValueIterator):
 
         self.policy = np.array([fs / self.N for fs in f])
         self.gym_policy = gp
+        end = datetime.now()
+        return end - start
 
     def save(self):
         plt.clf()
-        plt.plot(range(len(ret[0])), ret[0])
-        img_path = f"agents/visualizations/{int(self.movement_cost * self.N)}_uniform.png"
+        plt.plot(self.all_states, np.array(self.policy.copy()).flatten())
+        img_path = f"agents/visualizations/{int(self.movement_cost)}_uniform.png"
         self._save_image(img_path)
         # Saved as truemovementcost_N_uniform.csv
         policy_path = f"experiments/vi_vs_rl/uniform/vi_policies/{self.movement_cost}_{self.N}_uniform.csv"
@@ -64,7 +67,7 @@ class UniformAgent(ValueIterator):
 if __name__ == "__main__":
     sample_cost = 1
     movement_cost = 1
-    delta = 1/1000
+    delta = 1/10
     kwargs = {
         'sample_cost': sample_cost,
         'movement_cost': movement_cost,

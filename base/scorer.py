@@ -26,10 +26,8 @@ class Scorer(ABC):
         with tqdm(total = trials) as pbar:
             while num_runs < trials:
                 observation = self._standardize_observation(observation)
-
-                index = int(round(observation/delta)) # the policy is stored sequentially, so just finding how many deltas make up the current obs
-                action = int(policy[index])
-                true_mvmt = env.get_movement(action)[0]
+                action = int(policy[observation])
+                true_mvmt, _ = env.get_movement(action)
                 #assert np.close(true_mvmt env.get_movement(mvmt)[0])
                 observation, reward, done, _ = env.step(action)
                 this_round_dist += true_mvmt

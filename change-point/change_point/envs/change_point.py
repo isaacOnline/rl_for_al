@@ -17,8 +17,42 @@ class ChangePoint(gym.Env, ABC):
         self.seed(seed)
         self._set_args(sample_cost, movement_cost, delta, seed, epsilon)
         self._initialize_distribution(dist)
-        self._initialize_state(delta)
+        self._initialize_state()
         self.reset()
+
+    @abstractmethod
+    def _initialize_distribution(self, dist):
+        pass
+
+    @abstractmethod
+    def _initialize_state(self):
+        pass
+
+    @abstractmethod
+    def _update_state(self):
+        pass
+
+    @abstractmethod
+    def _discrete_state(self):
+        pass
+
+    def _cost(self, action):
+        return self.sample_cost + self.movement_cost * action
+
+    def seed(self, seed=None):
+        self.np_random, seed = seeding.np_random(seed)
+        return [seed]
+
+    def _set_args(self, sample_cost, movement_cost, delta, seed, epsilon):
+        self.sample_cost = sample_cost
+        self.movement_cost = movement_cost
+        self.delta = delta
+        self.seed = seed
+        if epsilon is None:
+            epsilon = delta
+        self.epsilon = epsilon
+        self.N = round(1 / delta)
+        self.action_space = Discrete(self.N)
 
     def reset(self):
         self.total_dist = 0
@@ -28,33 +62,9 @@ class ChangePoint(gym.Env, ABC):
         self.direction = 1
         self.change_point = self.dist.rvs(1)[0]
         self._update_state()
-        return self.S
+        # This returns the state rescaled from 0 to 1
+        return self._discrete_state()
 
-    def step(self, portion: int):
-        assert self.action_space.contains(portion)
-        distance = self._move_agent(portion)
-
-        # If change point is to the right of location, make direction positive, else negative
-        # Also update where agent is searching
-        if self.location < self.change_point:
-            self.direction = 1
-            self.min_loc = self.location
-            self.opposite_bound = self.max_loc
-        else:
-            self.direction = -1
-            self.max_loc = self.location
-            self.opposite_bound = self.min_loc
-
-        self._update_state()
-
-        # Test whether they're equal to using isclose, to save from fpn errors
-        if self.h_space_len < self.epsilon or np.isclose(self.h_space_len, self.epsilon):
-            done = True
-        else:
-            done = False
-
-        reward = -1 * self._cost(distance)
-        return self.S, reward, done, self._get_info()
 
     def get_movement(self, portion):
         """
@@ -92,6 +102,32 @@ class ChangePoint(gym.Env, ABC):
         }
         return info
 
+    def step(self, portion: int):
+        assert self.action_space.contains(portion)
+        distance = self._move_agent(portion)
+
+        # If change point is to the right of location, make direction positive, else negative
+        # Also update where agent is searching
+        if self.location < self.change_point:
+            self.direction = 1
+            self.min_loc = self.location
+            self.opposite_bound = self.max_loc
+        else:
+            self.direction = -1
+            self.max_loc = self.location
+            self.opposite_bound = self.min_loc
+
+        self._update_state()
+
+        # Test whether they're equal to using isclose, to save from fpn errors
+        if self.h_space_len < self.epsilon or np.isclose(self.h_space_len, self.epsilon):
+            done = True
+        else:
+            done = False
+
+        reward = -1 * self._cost(distance)
+        return self._discrete_state(), reward, done, self._get_info()
+
     def render(self, mode='human'):
         linex = np.linspace(0,1, 101)
         liney = np.zeros(linex.shape)
@@ -109,33 +145,3 @@ class ChangePoint(gym.Env, ABC):
     def close(self):
         plt.clf()
         plt.cla()
-
-    @abstractmethod
-    def _initialize_distribution(self, dist):
-        pass
-
-    @abstractmethod
-    def _initialize_state(self, delta):
-        pass
-
-    @abstractmethod
-    def _update_state(self):
-        pass
-
-    def _cost(self, action):
-        return self.sample_cost + self.movement_cost * action
-
-    def seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
-
-    def _set_args(self, sample_cost, movement_cost, delta, seed, epsilon):
-        self.sample_cost = sample_cost
-        self.movement_cost = movement_cost
-        self.delta = delta
-        self.seed = seed
-        if epsilon is None:
-            epsilon = delta
-        self.epsilon = epsilon
-        N = round(1/delta)
-        self.action_space = Discrete(N)
