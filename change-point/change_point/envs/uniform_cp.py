@@ -23,4 +23,4 @@ class UniformCP(ChangePoint):
         """
         Return i = S * N, since discrete values must be returned as ints
         """
-        return np.array(int(self.S * self.N))
+        return np.array(int(round(self.S * self.N)))

@@ -100,9 +100,9 @@ class UniformRunner(ModelRunner):
 
 if __name__ == "__main__":
     model = "ACER"
-    nsteps = 2000
-    N = 10
-    Tts = np.array([1, 1, 1, 1, 50, 200, 300, 400, 500, 750, 1000])
+    nsteps = 300000
+    N = 1000
+    Tts = np.array([1000, 750, 500, 400, 300, 200, 50, 1])
     for Tt in Tts:
         kwargs = {
             'sample_cost': 1,
