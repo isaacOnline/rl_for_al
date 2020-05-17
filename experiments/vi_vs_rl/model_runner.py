@@ -47,14 +47,15 @@ class ModelRunner(ABC):
     def train(self):
         start_time = datetime.now()
 
-        # #callback to stop training when vi reward is reached
-        # eval_env = self.env = gym.make( f"change_point:{self.env_name}-v0", **self.params)
-        # callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=self.vi_reward * 1.05, verbose=1)
-        # eval_callback = EvalCallback(eval_env, callback_on_new_best=callback_on_best,
-        #                              verbose=1,
-        #                              n_eval_episodes = 200)
+        #callback to stop training when vi reward is reached
+        eval_env = self.env = gym.make( f"change_point:{self.env_name}-v0", **self.params)
+        callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=self.vi_reward, verbose=1)
+        eval_callback = EvalCallback(eval_env, callback_on_new_best=callback_on_best,
+                                     verbose=1,
+                                     n_eval_episodes = 200,
+                                     eval_freq=2000)
 
-        self.model = self.model.learn(total_timesteps=self.nsteps) #,callback=eval_callback
+        self.model = self.model.learn(total_timesteps=self.nsteps, callback=eval_callback) #
         end_time = datetime.now()
         self.rl_train_time = end_time - start_time
 

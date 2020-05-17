@@ -100,7 +100,7 @@ class UniformRunner(ModelRunner):
 
 if __name__ == "__main__":
     model = "ACER"
-    nsteps = 300000
+    nsteps = 500000
     N = 1000
     Tts = np.array([1000, 750, 500, 400, 300, 200, 50, 1])
     for Tt in Tts:
@@ -113,4 +113,3 @@ if __name__ == "__main__":
         runner = UniformRunner(model, nsteps, True, kwargs)
         runner.train()
         runner.save()
-        # if score is close enough, end
