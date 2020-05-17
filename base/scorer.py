@@ -28,7 +28,7 @@ class Scorer(ABC):
                 observation = self._standardize_observation(observation)
                 action = int(policy[observation])
                 true_mvmt, _ = env.get_movement(action)
-                #assert np.close(true_mvmt env.get_movement(mvmt)[0])
+
                 observation, reward, done, _ = env.step(action)
                 this_round_dist += true_mvmt
                 this_round_num_samples += 1
