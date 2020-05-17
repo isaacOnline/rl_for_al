@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
-
+import signal
+import atexit
 import gym
 
 from abc import ABC, abstractmethod
@@ -20,6 +21,8 @@ models = {
 
 class ModelRunner(ABC):
     def __init__(self, model_name, nsteps, recalculate_vi=False, env_params=None):
+        self._add_exit_handling()
+
         self.model_name = model_name
         self.params = env_params
         self.nsteps = nsteps
@@ -29,6 +32,14 @@ class ModelRunner(ABC):
         self.env = gym.make( f"change_point:{self.env_name}-v0", **env_params)
         self.model = models[self.model_name]('MlpPolicy', self.env, verbose=1, gamma = 1, tensorboard_log=self.log_path)
         self.score_vi(recalculate_vi)
+
+    def _add_exit_handling(self):
+        # this gets fed two inputs when called, neither of which are needed
+        def delete_img_path(a, b):
+            os.remove(self.img_path)
+        atexit.register(delete_img_path)
+        signal.signal(signal.SIGTERM, delete_img_path)
+        signal.signal(signal.SIGINT, delete_img_path)
 
     def get_id(self):
         self.id = 0
@@ -44,18 +55,22 @@ class ModelRunner(ABC):
         if not os.path.exists(self.log_path):
             os.mkdir(self.log_path)
 
-    def train(self):
+    def train(self, use_callback=False):
         start_time = datetime.now()
 
-        #callback to stop training when vi reward is reached
-        eval_env = self.env = gym.make( f"change_point:{self.env_name}-v0", **self.params)
-        callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=self.vi_reward, verbose=1)
-        eval_callback = EvalCallback(eval_env, callback_on_new_best=callback_on_best,
-                                     verbose=1,
-                                     n_eval_episodes = 200,
-                                     eval_freq=2000)
 
-        self.model = self.model.learn(total_timesteps=self.nsteps, callback=eval_callback) #
+        if use_callback:
+            #callback to stop training when vi reward is reached
+            eval_env = self.env = gym.make( f"change_point:{self.env_name}-v0", **self.params)
+            callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=self.vi_reward, verbose=1)
+            eval_callback = EvalCallback(eval_env, callback_on_new_best=callback_on_best,
+                                         verbose=1,
+                                         n_eval_episodes = 1000,
+                                         eval_freq=5000)
+            self.model = self.model.learn(total_timesteps=self.nsteps, callback=eval_callback)
+        else:
+            self.model = self.model.learn(total_timesteps=self.nsteps)
+
         end_time = datetime.now()
         self.rl_train_time = end_time - start_time
 
