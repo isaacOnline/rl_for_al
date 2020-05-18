@@ -70,14 +70,11 @@ class UniformRunner(ModelRunner):
 
     def score_vi(self, recalculate):
         self.vi_policy = self.get_vi_policy(recalculate)
-        self.vi_reward, vi_ns, vi_distance = UniformScorer().score(self.vi_policy, self.env)
+        self.vi_reward, self.vi_ns, self.vi_distance = UniformScorer().score(self.vi_policy, self.env)
 
     def save_performance(self, rl_policy, vi_policy):
         print("{}:".format(self.model_name))
         self.rl_reward, rl_ns, rl_distance = UniformScorer().score(rl_policy, self.env)
-
-        print("\nValue Iteration:")
-        self.vi_reward, vi_ns, vi_distance = UniformScorer().score(vi_policy, self.env)
 
         line = pd.DataFrame({
             "id": self.id,
@@ -89,9 +86,9 @@ class UniformRunner(ModelRunner):
             'Tt': self.params['movement_cost'],
             'vi_reward': [self.vi_reward],
             'rl_reward': [self.rl_reward],
-            'vi_ns': [vi_ns],
+            'vi_ns': [self.vi_ns],
             'rl_ns': [rl_ns],
-            'vi_distance': [vi_distance],
+            'vi_distance': [self.vi_distance],
             'rl_distance': [rl_distance],
             'N': int(1/self.params['delta'])
         })
@@ -100,7 +97,7 @@ class UniformRunner(ModelRunner):
 
 if __name__ == "__main__":
     model = "ACER"
-    nsteps = 500000
+    nsteps = 100000
     N = 1000
     Tts = np.array([1000, 750, 500, 400, 300, 200, 50, 1])
     for Tt in Tts:
@@ -111,5 +108,5 @@ if __name__ == "__main__":
         }
 
         runner = UniformRunner(model, nsteps, True, kwargs)
-        runner.train()
+        runner.train(use_callback=True)
         runner.save()
