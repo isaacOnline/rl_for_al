@@ -37,8 +37,6 @@ class ModelRunner(ABC):
         # this gets fed two inputs when called, neither of which are needed
         def delete_img_path(a, b):
             os.remove(self.img_path)
-        atexit.register(delete_img_path)
-        signal.signal(signal.SIGTERM, delete_img_path)
         signal.signal(signal.SIGINT, delete_img_path)
 
     def get_id(self):
@@ -66,7 +64,7 @@ class ModelRunner(ABC):
             eval_callback = EvalCallback(eval_env, callback_on_new_best=callback_on_best,
                                          verbose=1,
                                          n_eval_episodes = 1000,
-                                         eval_freq=5000)
+                                         eval_freq=10000)
             self.model = self.model.learn(total_timesteps=self.nsteps, callback=eval_callback)
         else:
             self.model = self.model.learn(total_timesteps=self.nsteps)
