@@ -42,7 +42,7 @@ class UniformAgent(ValueIterator):
                 if this_value < best_value:
                     best_value = this_value
                     f[state] = s_prime
-                    gp[state] = round(s_prime * self.N /state)
+                    gp[state] = round(s_prime / state * self.N)
 
             # update value, ns, and dist for this state
             Psf = f[state] / state
@@ -68,8 +68,8 @@ class UniformAgent(ValueIterator):
 
 if __name__ == "__main__":
     sample_cost = 1
-    movement_cost = 1
-    delta = 1/10
+    movement_cost = 100
+    delta = 1/100
     kwargs = {
         'sample_cost': sample_cost,
         'movement_cost': movement_cost,

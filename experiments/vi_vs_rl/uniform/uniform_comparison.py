@@ -39,8 +39,7 @@ class UniformRunner(ModelRunner):
 
     def get_rl_policy(self):
         policy = []
-        N = round(1/(self.params['delta']))
-        for i in range(N + 1):
+        for i in range(self.N + 1):
             obs = np.array(i)
             obs.shape = (1,)
             action = np.argmax(self.model.action_probability(obs))
@@ -50,10 +49,9 @@ class UniformRunner(ModelRunner):
 
     def plot(self, rl_policy, vi_policy):
         plt.clf()
-        N = round(1 / (self.params['delta']))
 
-        plt.plot(np.linspace(0, 1, N+1), rl_policy, c='tab:orange', label=f"{self.model_name} Learner")
-        plt.plot(np.linspace(0, 1, N+1), vi_policy, c='B', label="Value Iteration")
+        plt.plot(np.linspace(0, 1, self.N+1), rl_policy, c='tab:orange', label=f"{self.model_name} Learner")
+        plt.plot(np.linspace(0, 1, self.N+1), vi_policy, c='B', label="Value Iteration")
 
         plt.title(
             f"ACER Train Time: {self.rl_train_time}, VI Train Time: {self.vi_train_time}\n"
@@ -64,7 +62,7 @@ class UniformRunner(ModelRunner):
         plt.legend()
 
         plt.xlim((0, 1))
-        plt.ylim((0, N))
+        plt.ylim((0, self.N))
 
         plt.savefig(self.img_path)
 
@@ -90,7 +88,7 @@ class UniformRunner(ModelRunner):
             'rl_ns': [rl_ns],
             'vi_distance': [self.vi_distance],
             'rl_distance': [rl_distance],
-            'N': int(1/self.params['delta'])
+            'N': self.N
         })
         line.to_csv(f"experiments/vi_vs_rl/uniform/uniform_performance.csv", mode='a', header=False, index=False)
 
@@ -100,13 +98,17 @@ if __name__ == "__main__":
     nsteps = 100000
     N = 1000
     Tts = np.array([1000, 750, 500, 400, 300, 200, 50, 1])
-    for Tt in Tts:
-        kwargs = {
-            'sample_cost': 1,
-            'movement_cost': Tt,
-            'delta': 1/N
-        }
+    while len(Tts > 0):
+        for Tt in Tts:
+            kwargs = {
+                'sample_cost': 1,
+                'movement_cost': Tt,
+                'delta': 1/N
+            }
 
-        runner = UniformRunner(model, nsteps, True, kwargs)
-        runner.train(use_callback=True)
-        runner.save()
+            runner = UniformRunner(model, nsteps, True, kwargs)
+            runner.train(use_callback=True)
+            runner.save()
+            if runner.vi_reward > runner.rl_reward * 1.05:
+                Tts = Tts[Tts != Tt]
+        print(Tts)

@@ -9,26 +9,25 @@ import gym
 
 
 class NonUniformAgent(ValueIterator):
-    def __init__(self, N, sample_cost = 1, movement_cost = 1000, dist = None):
+    def __init__(self, delta, epsilon = None, sample_cost = 1, movement_cost = 1000, dist = None):
+        ValueIterator.__init__(self, delta, epsilon, sample_cost, movement_cost)
         # Dist must be an object with a cdf function
         if dist is None:
-            self.dist = uniform(0, N)
+            self.dist = uniform(0, 1)
         else:
             self.dist = dist
 
-        ValueIterator.__init__(self, N, sample_cost, movement_cost)
-        self.policy = np.zeros((N+1, N+1), dtype=np.int)
+        self.policy = np.zeros((self.N + 1, self.N+1), dtype=np.int)
 
-        self.state_values = np.zeros((N+1, N+1),dtype=np.float128)
+        self.state_values = np.zeros((self.N + 1, self.N + 1),dtype=np.float128)
+
+        self.gym_actions = np.zeros((self.N + 1, self.N + 1), np.int)
 
     def calculate_policy(self):
         # states are tuples (x,xh) where x is the current location and xh is
         # the opposite end of the hypothesis space
         start_time = datetime.now()
-        self.state_values = np.zeros((self.N + 1, self.N + 1),dtype=np.float128)
 
-        # loop over possible lengths of hypothesis space
-        # dd = |x - xh|
         num_iterations = (self.N - 1) * self.N * (2 * (self.N - 1) + 1) / 6
         with tqdm(total=num_iterations) as pbar:
             for h_space_len in range(self.N + 1):
@@ -47,8 +46,6 @@ class NonUniformAgent(ValueIterator):
                             self.state_values[location, opposite_bound] = 0
                     else:
                         for opposite_bound in opposite_bounds:
-                            if location in (2,3,4) and opposite_bound == 10:
-                                a = 'here'
                             # look at all possible actions from this state
                             # actions are distances to travel
                             best_ev = np.inf
@@ -60,9 +57,9 @@ class NonUniformAgent(ValueIterator):
                                     # move forward
                                     direction = 1
                                     new_location = location + direction * action
-                                    state_prob = np.float128(self.dist.cdf(opposite_bound) - self.dist.cdf(location))
-                                    this_section_prob = np.float128(self.dist.cdf(new_location) - self.dist.cdf(location))
-                                    if state_prob ==0:
+                                    state_prob = np.float128(self.dist.cdf(opposite_bound/self.N) - self.dist.cdf(location/self.N))
+                                    this_section_prob = np.float128(self.dist.cdf(new_location/self.N) - self.dist.cdf(location/self.N))
+                                    if state_prob == 0:
                                         Pst = 0.5
                                     else:
                                         Pst = this_section_prob/state_prob
@@ -70,8 +67,8 @@ class NonUniformAgent(ValueIterator):
                                     # move backward
                                     direction = -1
                                     new_location = location + direction * action
-                                    state_prob = np.float128(self.dist.cdf(location) - self.dist.cdf(opposite_bound))
-                                    this_section_prob = np.float128(self.dist.cdf(location) - self.dist.cdf(new_location))
+                                    state_prob = np.float128(self.dist.cdf(location/self.N) - self.dist.cdf(opposite_bound/self.N))
+                                    this_section_prob = np.float128(self.dist.cdf(location/self.N) - self.dist.cdf(new_location/self.N))
                                     if state_prob == 0:
                                         # if probability of change point being in this state is so small that it
                                         # can't be stored in a 64-bit float, then pretend the probability is uniform
@@ -80,7 +77,7 @@ class NonUniformAgent(ValueIterator):
                                         Pst = this_section_prob/state_prob
                                     # Pstc is the complement (theta between xx +/- aa and xh)
                                 Pstc = 1 - Pst
-                                ev = self.sample_cost + self.movement_cost * action+ \
+                                ev = self.sample_cost + self.movement_cost / self.N * action+ \
                                      Pst * self.state_values[new_location, location] + \
                                      Pstc * self.state_values[new_location, opposite_bound]
                                 if ev < best_ev:
@@ -89,42 +86,48 @@ class NonUniformAgent(ValueIterator):
 
                             self.policy[location, opposite_bound] = best_action
                             self.state_values[location, opposite_bound] = best_ev
+                            self.gym_actions[location,opposite_bound] = round(best_action/h_space_len * self.N)
+        self.policy = self.policy/self.N
         end_time = datetime.now()
         self.train_time = end_time - start_time
         return self.train_time
 
     def save(self):
         dist_name = self.dist.dist.name
-        policy_path = f"experiments/vi_vs_rl/non_uniform/vi_policies/{int(self.movement_cost * self.N)}_{self.N}_{dist_name}.csv"
-        np.savetxt(policy_path, self.policy)
+        policy_path = f"experiments/vi_vs_rl/non_uniform/vi_policies/{int(self.movement_cost)}_{self.N}_{dist_name}.csv"
+        np.savetxt(policy_path, self.gym_actions)
 
-def get_dist(N):
+def get_dist():
     min = 0
-    max = N
-    mean = N * 0.5
-    sd = np.sqrt(N * 0.1)
+    max = 1
+    mean = 0.5
+    sd = np.sqrt(0.1)
     a = (min - mean) / sd
     b = (max - mean) / sd
     dist = truncnorm(a, b, loc=mean, scale=sd)
     return dist
 
+def get_unif():
+    return uniform(0,1)
+
 if __name__ == "__main__":
     sample_cost = 1
-    movement_cost = 1
-    N = 30
-    dist=get_dist(N)
+    movement_cost = 100
+    N = 100
+    delta = 1/N
+    dist=get_unif()
     kwargs = {
         'sample_cost': sample_cost,
         'movement_cost': movement_cost,
-        'N': N,
+        'delta': delta,
         'dist': dist
     }
 
 
-    agnt = NonUniformAgent(N, movement_cost=movement_cost,dist=dist)
+    agnt = NonUniformAgent(**kwargs)
     train_time = agnt.calculate_policy()
     agnt.save()
 
 
-    NonUniformScorer().score(agnt.policy, gym.make("change_point:non_uniform-v0", **kwargs), trials = 10000)
+    NonUniformScorer().score(agnt.gym_actions, gym.make("change_point:non_uniform-v0", **kwargs), trials = 10000)
 

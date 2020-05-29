@@ -18,18 +18,22 @@ class RechargingCP(ChangePoint):
         self.gamma = gamma
         ChangePoint.__init__(self, sample_cost, movement_cost, N, dist, seed)
 
-    def _set_args(self, sample_cost, movement_cost, N, seed):
-        ChangePoint._set_args(self, sample_cost, movement_cost, N, seed)
-
+    def set_action_space(self):
         # This isn't self.N + 1 because moving N units would not decrease the size of the hypothesis space
-        # This isn't self.battery_level + 1, because we can never get to a battery level of 0
+        # This isn't self.battery_level + 1, because we can never get to a battery level of 0, meaning you could never
+        # have low enough battery to complete a full recharge
         self.action_space = MultiDiscrete([self.N, self.battery_level])
 
     def _cost(self, action):
         # The cost is the sampling time,
         # Plus (the time to move one unit) multiplied by (the number of units moved),
         # Plus the recharge time
-        return self.sample_cost + self.movement_cost * action[0] + action[1]
+        if action[1] > 0:
+            return_to_origin_cost = self.location * 2 * self.movement_cost
+        else:
+            return_to_origin_cost = 0
+
+        return self.sample_cost + self.movement_cost * action[0] + action[1] + return_to_origin_cost
 
 
     def _initialize_distribution(self, dist=None):

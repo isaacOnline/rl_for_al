@@ -25,6 +25,7 @@ class ModelRunner(ABC):
 
         self.model_name = model_name
         self.params = env_params
+        self.N = round(1/self.params['delta'])
         self.nsteps = nsteps
         self.get_id()
         self.start_logging()
@@ -63,7 +64,7 @@ class ModelRunner(ABC):
             callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=self.vi_reward, verbose=1)
             eval_callback = EvalCallback(eval_env, callback_on_new_best=callback_on_best,
                                          verbose=1,
-                                         n_eval_episodes = 1000,
+                                         n_eval_episodes = 250,
                                          eval_freq=10000)
             self.model = self.model.learn(total_timesteps=self.nsteps, callback=eval_callback)
         else:

@@ -1,6 +1,6 @@
 from change_point.envs.change_point import ChangePoint
 from scipy.stats import truncnorm
-from gym.spaces import MultiDiscrete
+from gym.spaces import MultiDiscrete, Discrete
 import numpy as np
 
 # The default distribution here is truncated normal
@@ -19,13 +19,15 @@ class NonUniformCP(ChangePoint):
             dist = truncnorm(a, b, loc=mean,scale=sd)
         self.dist = dist
 
-    def _initialize_state(self, delta):
-        N = round(1/delta)
-        self.observation_space = MultiDiscrete([N+1,N+1])
+    def _set_action_space(self):
+        self.action_space = Discrete(self.N)
+
+    def _initialize_state(self):
+        self.observation_space = MultiDiscrete([self.N + 1, self.N + 1])
 
     def _update_state(self):
         self.S = np.array([self.location, self.opposite_bound])
         self.h_space_len = self.max_loc - self.min_loc
 
     def _discrete_state(self):
-        return np.array([int(self.location * self.N), int(self.opposite_bound * self.N)])
+        return np.array([int(round(self.location * self.N)), int(round(self.opposite_bound * self.N))])

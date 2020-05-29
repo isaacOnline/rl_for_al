@@ -2,7 +2,6 @@ import gym
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from gym.spaces import Discrete
 from gym.utils import seeding
 from abc import ABC, abstractmethod
 
@@ -29,6 +28,10 @@ class ChangePoint(gym.Env, ABC):
         pass
 
     @abstractmethod
+    def _set_action_space(self):
+        pass
+
+    @abstractmethod
     def _update_state(self):
         pass
 
@@ -52,7 +55,7 @@ class ChangePoint(gym.Env, ABC):
             epsilon = delta
         self.epsilon = epsilon
         self.N = round(1 / delta)
-        self.action_space = Discrete(self.N)
+        self._set_action_space()
 
     def reset(self):
         self.total_dist = 0

@@ -14,6 +14,9 @@ class UniformCP(ChangePoint):
     def _initialize_state(self):
         self.observation_space = Discrete(self.N + 1)
 
+    def _set_action_space(self):
+        self.action_space = Discrete(self.N)
+
     def _update_state(self):
         length = self.max_loc - self.min_loc
         self.S = np.array(length)
