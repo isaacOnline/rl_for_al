@@ -12,30 +12,11 @@ class UniformRunner(ModelRunner):
         self.env_name = "uniform"
         self.dist_name = "uniform"
         ModelRunner.__init__(self, model_name, nsteps, recalculate_vi, env_params)
-
-    def get_vi_policy(self, recalculate):
-        if recalculate:
-            policy = self._calc_vi()
-        else:
-            try:
-                policy = np.genfromtxt(
-                    f"experiments/vi_vs_rl/uniform/vi_policies/{self.params['movement_cost']}_"
-                    f"{round(1/self.params['delta'])}_"
-                    f"{self.env_name}.csv"
-                )
-                self.vi_train_time = "Not Calculated"
-            except:
-                policy = self._calc_vi()
-        return policy
-
-    def _calc_vi(self):
-        agnt = UniformAgent(sample_cost=self.params['sample_cost'],
-                            movement_cost=self.params['movement_cost'],
-                            delta=self.params['delta'])
-        self.vi_train_time = agnt.calculate_policy()
-        agnt.save()
-        policy = agnt.gym_policy
-        return policy
+        self.policy_path = f"experiments/vi_vs_rl/uniform/vi_policies/{self.params['movement_cost']}_" \
+                           f"{round(1/self.params['delta'])}_" \
+                           f"{self.env_name}.csv"
+        self.agent = UniformAgent
+        self.scorer = UniformScorer
 
     def get_rl_policy(self):
         policy = []
@@ -66,13 +47,10 @@ class UniformRunner(ModelRunner):
 
         plt.savefig(self.img_path)
 
-    def score_vi(self, recalculate):
-        self.vi_policy = self.get_vi_policy(recalculate)
-        self.vi_reward, self.vi_ns, self.vi_distance = UniformScorer().score(self.vi_policy, self.env)
-
     def save_performance(self, rl_policy, vi_policy):
+        print(f"N: {self.N} NSTEPS: {self.nsteps} Tt: {self.params['movement_cost']}")
         print("{}:".format(self.model_name))
-        self.rl_reward, rl_ns, rl_distance = UniformScorer().score(rl_policy, self.env)
+        self.rl_reward, rl_ns, rl_distance = self.scorer().score(rl_policy, self.env)
 
         line = pd.DataFrame({
             "id": self.id,
@@ -90,7 +68,7 @@ class UniformRunner(ModelRunner):
             'rl_distance': [rl_distance],
             'N': self.N
         })
-        line.to_csv(f"experiments/vi_vs_rl/uniform/uniform_performance.csv", mode='a', header=False, index=False)
+        line.to_csv(self.performance_path, mode='a', header=False, index=False)
 
 
 if __name__ == "__main__":

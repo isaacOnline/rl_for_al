@@ -14,25 +14,9 @@ class NonUniformRunner(ModelRunner):
         self.dist = env_params['dist']
         self.dist_name = self.dist.dist.name
         ModelRunner.__init__(self, model_name, nsteps, recalculate_vi, env_params)
-
-    def get_vi_policy(self, recalculate):
-        # if we want to recalculate, do so, otherwise try to access a stored policy
-        if recalculate:
-            agnt = NonUniformAgent(**self.params)
-            self.vi_train_time = agnt.calculate_policy()
-            agnt.save()
-            policy = agnt.policy
-        else:
-            try:
-                policy = np.genfromtxt(
-                    f"experiments/vi_vs_rl/non_uniform/vi_policies/{int(self.params['movement_cost'])}_{self.N}_{self.dist_name}.csv")
-                self.vi_train_time = "Not Calculated"
-            except:
-                agnt = NonUniformAgent(**self.params)
-                self.vi_train_time = agnt.calculate_policy()
-                agnt.save()
-                policy = agnt.gym_actions
-        return policy
+        self.policy_path = f"experiments/vi_vs_rl/non_uniform/vi_policies/{int(self.params['movement_cost'])}_{self.N}_{self.dist_name}.csv"
+        self.agent = NonUniformAgent
+        self.scorer = NonUniformScorer
 
     def get_rl_policy(self):
         policy = np.zeros((self.N+1, self.N+1), dtype=np.int)
@@ -43,10 +27,6 @@ class NonUniformRunner(ModelRunner):
                 action = np.argmax(self.model.action_probability(obs))
                 policy[first_end, second_end] = action
         return policy
-
-    def score_vi(self, recalculate):
-        self.vi_policy = self.get_vi_policy(recalculate)
-        self.vi_reward, self.vi_ns, self.vi_distance = NonUniformScorer().score(self.vi_policy, self.env)
 
     def plot(self, rl_policy, vi_policy):
         plt.clf()
@@ -70,7 +50,7 @@ class NonUniformRunner(ModelRunner):
     def save_performance(self, rl_policy, vi_policy):
         print(f"N: {self.N} NSTEPS: {self.nsteps} Tt: {self.params['movement_cost']}")
         print("{}:".format(self.model_name))
-        self.rl_reward, rl_ns, rl_dist = NonUniformScorer().score(rl_policy, self.env)
+        self.rl_reward, rl_ns, rl_distance = self.scorer().score(rl_policy, self.env)
 
         line = pd.DataFrame({
             "id": self.id,
@@ -86,10 +66,10 @@ class NonUniformRunner(ModelRunner):
             'vi_ns': [self.vi_ns],
             'rl_ns': [rl_ns],
             'vi_distance': [self.vi_distance],
-            'rl_distance': [rl_dist],
+            'rl_distance': [rl_distance],
             'distribution': [self.dist_name]
         })
-        line.to_csv(f"experiments/vi_vs_rl/non_uniform/non_uniform_performance.csv", mode='a', header=False, index=False)
+        line.to_csv(self.performance_path, mode='a', header=False, index=False)
 
 def get_truncnorm():
     # See https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html
