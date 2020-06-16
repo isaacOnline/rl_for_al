@@ -52,7 +52,7 @@ class UniformAgent(ValueIterator):
             val[state] = self.sample_cost * num_samples[state] + self.movement_cost * distance_to_term[state]
 
         self.policy = np.array([fs / self.N for fs in f])
-        self.gym_policy = gp
+        self.gym_actions = gp
         end = datetime.now()
         return end - start
 
@@ -63,7 +63,7 @@ class UniformAgent(ValueIterator):
         self._save_image(img_path)
         # Saved as truemovementcost_N_uniform.csv
         policy_path = f"experiments/vi_vs_rl/uniform/vi_policies/{self.movement_cost}_{self.N}_uniform.csv"
-        np.savetxt(policy_path, self.gym_policy)
+        np.savetxt(policy_path, self.gym_actions)
 
 
 if __name__ == "__main__":
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     agnt = UniformAgent(delta, movement_cost=movement_cost)
     agnt.calculate_policy()
     agnt.save()
-    flat_policy = np.array(agnt.gym_policy).flatten()
+    flat_policy = np.array(agnt.gym_actions).flatten()
 
     UniformScorer().score(flat_policy, gym.make("change_point:uniform-v0", **kwargs), trials = 10000)
 
