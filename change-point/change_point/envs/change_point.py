@@ -39,6 +39,13 @@ class ChangePoint(gym.Env, ABC):
     def _discrete_state(self):
         pass
 
+    @abstractmethod
+    def _move_agent(self, action):
+        pass
+
+    def _dead_battery(self):
+        return False
+
     def _cost(self, action):
         return self.sample_cost + self.movement_cost * action
 
@@ -68,32 +75,9 @@ class ChangePoint(gym.Env, ABC):
         # This returns the state rescaled from 0 to 1
         return self._discrete_state()
 
-
-    def get_movement(self, portion):
-        """
-        :param action:
-        :return:
-        """
-        k = round(portion * self.h_space_len)
-        distance = k * self.delta
-
-        if distance == 0:
-            distance += self.delta
-        if distance == self.h_space_len:
-            distance -= self.delta
-
-        mvmt = distance * self.direction
-        return distance, mvmt
-
     def _update_hist(self, dist):
         self.total_dist += dist
         self.location_hist += [self.location]
-
-    def _move_agent(self, portion: int):
-        dist, mvmt = self.get_movement(portion)
-        self._update_hist(dist)
-        self.location += mvmt
-        return dist
 
     def _get_info(self):
         info = {
@@ -105,11 +89,11 @@ class ChangePoint(gym.Env, ABC):
         }
         return info
 
-    def step(self, portion: int):
-        assert self.action_space.contains(portion)
-        distance = self._move_agent(portion)
+    def step(self, action):
+        assert self.action_space.contains(action)
+        cost_params = self._move_agent(action)
 
-        # If change point is to the right of location, make direction positive, else negative
+        # If change point is to the right of location, make direction positive, otherwise negative
         # Also update where agent is searching
         if self.location < self.change_point:
             self.direction = 1
@@ -122,13 +106,13 @@ class ChangePoint(gym.Env, ABC):
 
         self._update_state()
 
-        # Test whether they're equal to using isclose, to save from fpn errors
-        if self.h_space_len < self.epsilon or np.isclose(self.h_space_len, self.epsilon):
+        # Test whether they're equal using isclose, to save from fpn errors
+        if self.h_space_len < self.epsilon or np.isclose(self.h_space_len, self.epsilon) or self._dead_battery():
             done = True
         else:
             done = False
 
-        reward = -1 * self._cost(distance)
+        reward = -1 * self._cost(cost_params)
         return self._discrete_state(), reward, done, self._get_info()
 
     def render(self, mode='human'):
@@ -143,7 +127,8 @@ class ChangePoint(gym.Env, ABC):
         ax.scatter(self.location, 0, c='m', zorder=1000)
         ax.get_yaxis().set_visible(False)
         fig.show()
-        time.sleep(0.1)
+        if mode == 'human':
+            time.sleep(0.1)
 
     def close(self):
         plt.clf()

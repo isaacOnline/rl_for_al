@@ -30,7 +30,10 @@ class NonUniformAgent(ValueIterator):
 
         num_iterations = (self.N - 1) * self.N * (2 * (self.N - 1) + 1) / 6
         with tqdm(total=num_iterations) as pbar:
-            for h_space_len in range(self.N + 1):
+            # find the index where the hypothesis space is small enough (ie equal to epsilon), then only
+            # search hypothesis space lengths larger than this
+            terminal_index = int(round(self.epsilon * self.N))
+            for h_space_len in range(terminal_index  + 1, self.N + 1):
                 # loop over possible current locations
                 for location in range(self.N + 1):
                     # calculate possible values of xh

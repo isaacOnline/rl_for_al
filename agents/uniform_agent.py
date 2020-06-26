@@ -21,10 +21,11 @@ class UniformAgent(ValueIterator):
         val = [0] * (self.N + 1)  # value of state - total cost to termination
         num_samples = [0] * (self.N + 1)  # number of samples to termination from this state
         distance_to_term = [0] * (self.N + 1)  # distance to termination from this state
-        gp = [0] * (self.N + 1) # numbers to feed to gym, which are scaled as portions of the hyp space to travel
+        gp = [0] * (self.N + 1) # numbers to feed to gym, which are scaled portions of the hyp space to travel
 
         # terminal states are those smaller/eq  stopErr
-        terminal_indexes = np.where(self.all_states <= self.epsilon)[0]
+        # (Use all close to account for fpn errors)
+        terminal_indexes = np.where((self.all_states < self.epsilon) | np.isclose(self.all_states, self.epsilon))[0]
 
         # loop over non-terminal states
         for state in range(terminal_indexes[-1] + 1, self.N + 1):
@@ -69,15 +70,18 @@ class UniformAgent(ValueIterator):
 if __name__ == "__main__":
     sample_cost = 1
     movement_cost = 100
-    delta = 1/100
+    N = 500
+    delta = 1/N
+    epsilon = 0.2
     kwargs = {
         'sample_cost': sample_cost,
         'movement_cost': movement_cost,
-        'delta': delta
+        'delta': delta,
+        'epsilon': epsilon
     }
 
 
-    agnt = UniformAgent(delta, movement_cost=movement_cost)
+    agnt = UniformAgent(**kwargs)
     agnt.calculate_policy()
     agnt.save()
     flat_policy = np.array(agnt.gym_actions).flatten()

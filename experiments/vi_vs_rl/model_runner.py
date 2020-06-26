@@ -1,4 +1,5 @@
 import os
+import shutil
 from datetime import datetime
 import signal
 import gym
@@ -32,13 +33,15 @@ class ModelRunner(ABC):
 
         self.env = gym.make( f"change_point:{self.env_name}-v0", **env_params)
         self.model = models[self.model_name]('MlpPolicy', self.env, verbose=1, gamma = 1, tensorboard_log=self.log_path)
+        self._set_policy_path()
         self.score_vi(recalculate_vi)
         self.performance_path = f"experiments/vi_vs_rl/{self.env_name}/{self.env_name}_performance.csv"
 
     def _add_exit_handling(self):
-        # this gets fed two inputs when called, neither of which are needed
         def delete_img_path(a, b):
+            # this gets fed two inputs when called, neither of which are needed
             os.remove(self.img_path)
+            shutil.rmtree(self.log_path)
         signal.signal(signal.SIGINT, delete_img_path)
 
     def get_id(self):
@@ -48,6 +51,7 @@ class ModelRunner(ABC):
         while os.path.exists(self.img_path):
             self.id+=1
             self.img_path = f"experiments/vi_vs_rl/{self.env_name}/visualizations/{self.dist_name}_{self.id}.png"
+        # Reserve this image path, in case multiple runners are being run at the same time
         open(self.img_path, "a").close()
 
     def start_logging(self):
@@ -62,7 +66,7 @@ class ModelRunner(ABC):
         if use_callback:
             #callback to stop training when vi reward is reached
             eval_env = self.env = gym.make( f"change_point:{self.env_name}-v0", **self.params)
-            callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=self.vi_reward, verbose=1)
+            callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=self.vi_performance['reward'], verbose=1)
             eval_callback = EvalCallback(eval_env, callback_on_new_best=callback_on_best,
                                          verbose=1,
                                          n_eval_episodes = 250,
@@ -77,7 +81,8 @@ class ModelRunner(ABC):
     def save(self, message = None):
         rl_policy = self.get_rl_policy()
         vi_policy = self.vi_policy
-        self.model.save(f"experiments/vi_vs_rl/{self.env_name}/model_objects/{self.dist_name}_{self.id}")
+        model_path = f"experiments/vi_vs_rl/{self.env_name}/model_objects/{self.dist_name}_{self.id}"
+        self.model.save(model_path)
         if message:
             print(message)
         self.save_performance(rl_policy, vi_policy)
@@ -89,7 +94,9 @@ class ModelRunner(ABC):
             policy = self._calc_vi()
         else:
             try:
-                policy = np.genfromtxt(self.policy_path)
+                # Some policies are saved as csvs and some are saved as np arrays, so the loading functions are
+                # specific to each problem
+                policy = self.load(self.policy_path)
                 self.vi_train_time = "Not Calculated"
             except:
                 policy = self._calc_vi()
@@ -104,7 +111,7 @@ class ModelRunner(ABC):
 
     def score_vi(self, recalculate):
         self.vi_policy = self.get_vi_policy(recalculate)
-        self.vi_reward, self.vi_ns, self.vi_distance = self.scorer().score(self.vi_policy, self.env)
+        self.vi_performance = self.scorer().score(self.vi_policy, self.env)
 
     @abstractmethod
     def get_rl_policy(self):
@@ -116,4 +123,8 @@ class ModelRunner(ABC):
 
     @abstractmethod
     def save_performance(self, rl_policy, vi_policy):
+        pass
+
+    @abstractmethod
+    def _set_policy_path(self):
         pass

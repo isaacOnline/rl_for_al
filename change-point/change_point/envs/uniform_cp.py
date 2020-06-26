@@ -27,3 +27,25 @@ class UniformCP(ChangePoint):
         Return i = S * N, since discrete values must be returned as ints
         """
         return np.array(int(round(self.S * self.N)))
+
+    def _move_agent(self, portion: int):
+        dist, mvmt = self.get_movement(portion)
+        self._update_hist(dist)
+        self.location += mvmt
+        return dist
+
+    def get_movement(self, portion):
+        """
+        :param action:
+        :return:
+        """
+        k = round(portion * self.h_space_len)
+        distance = k * self.delta
+
+        if distance == 0:
+            distance += self.delta
+        if distance == self.h_space_len:
+            distance -= self.delta
+
+        mvmt = distance * self.direction
+        return distance, mvmt

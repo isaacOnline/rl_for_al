@@ -10,13 +10,16 @@ from experiments.vi_vs_rl.model_runner import ModelRunner
 
 class NonUniformRunner(ModelRunner):
     def __init__(self, model_name, nsteps, recalculate_vi=False, env_params=None):
+        self.agent = NonUniformAgent
+        self.scorer = NonUniformScorer
         self.env_name = "non_uniform"
         self.dist = env_params['dist']
         self.dist_name = self.dist.dist.name
         ModelRunner.__init__(self, model_name, nsteps, recalculate_vi, env_params)
+
+    def _set_policy_path(self):
         self.policy_path = f"experiments/vi_vs_rl/non_uniform/vi_policies/{int(self.params['movement_cost'])}_{self.N}_{self.dist_name}.csv"
-        self.agent = NonUniformAgent
-        self.scorer = NonUniformScorer
+        self.load = np.genfromtxt
 
     def get_rl_policy(self):
         policy = np.zeros((self.N+1, self.N+1), dtype=np.int)
@@ -37,8 +40,8 @@ class NonUniformRunner(ModelRunner):
         cbar_im = fig.colorbar(rl_im, ax=rl_ax, cax=cbar_ax)
         cbar_im.ax.set_ylabel("Movement On Line", rotation=-90, va="bottom")
 
-        vi_ax.set_title(f"VI Policy\nTrain Time: {self.vi_train_time}\nAvg Reward: {round(self.vi_reward,2)}")
-        rl_ax.set_title(f"ACER Policy\nTrain Time: {self.rl_train_time}\nAvg Reward: {round(self.rl_reward,2)}")
+        vi_ax.set_title(f"VI Policy\nTrain Time: {self.vi_train_time}\nAvg Reward: {round(self.vi_performance['reward'],2)}")
+        rl_ax.set_title(f"ACER Policy\nTrain Time: {self.rl_train_time}\nAvg Reward: {round(self.rl_performance['reward'],2)}")
 
         plt.suptitle(
             f"tt/ts: {self.params['movement_cost']}/{self.params['sample_cost']}\n"
@@ -50,7 +53,7 @@ class NonUniformRunner(ModelRunner):
     def save_performance(self, rl_policy, vi_policy):
         print(f"N: {self.N} NSTEPS: {self.nsteps} Tt: {self.params['movement_cost']}")
         print("{}:".format(self.model_name))
-        self.rl_reward, rl_ns, rl_distance = self.scorer().score(rl_policy, self.env)
+        self.rl_performance = self.scorer().score(rl_policy, self.env)
 
         line = pd.DataFrame({
             "id": self.id,
@@ -61,12 +64,12 @@ class NonUniformRunner(ModelRunner):
             "model": [self.model_name],
             'Ts': self.params['sample_cost'],
             'Tt': self.params['movement_cost'],
-            'vi_reward': [self.vi_reward],
-            'rl_reward': [self.rl_reward],
-            'vi_ns': [self.vi_ns],
-            'rl_ns': [rl_ns],
-            'vi_distance': [self.vi_distance],
-            'rl_distance': [rl_distance],
+            'vi_reward': [self.vi_performance['reward']],
+            'rl_reward': [self.rl_performance['reward']],
+            'vi_ns': [self.vi_performance['n_samples']],
+            'rl_ns': [self.rl_performance['n_samples']],
+            'vi_distance': [self.vi_performance['dist']],
+            'rl_distance': [self.rl_performance['dist']],
             'distribution': [self.dist_name]
         })
         line.to_csv(self.performance_path, mode='a', header=False, index=False)

@@ -9,14 +9,17 @@ from experiments.vi_vs_rl.model_runner import ModelRunner
 
 class UniformRunner(ModelRunner):
     def __init__(self, model_name, nsteps, recalculate_vi=False, env_params=None):
+        self.agent = UniformAgent
+        self.scorer = UniformScorer
         self.env_name = "uniform"
         self.dist_name = "uniform"
         ModelRunner.__init__(self, model_name, nsteps, recalculate_vi, env_params)
+
+    def _set_policy_path(self):
         self.policy_path = f"experiments/vi_vs_rl/uniform/vi_policies/{self.params['movement_cost']}_" \
                            f"{round(1/self.params['delta'])}_" \
                            f"{self.env_name}.csv"
-        self.agent = UniformAgent
-        self.scorer = UniformScorer
+        self.load = np.genfromtxt
 
     def get_rl_policy(self):
         policy = []
@@ -50,7 +53,7 @@ class UniformRunner(ModelRunner):
     def save_performance(self, rl_policy, vi_policy):
         print(f"N: {self.N} NSTEPS: {self.nsteps} Tt: {self.params['movement_cost']}")
         print("{}:".format(self.model_name))
-        self.rl_reward, rl_ns, rl_distance = self.scorer().score(rl_policy, self.env)
+        self.rl_performance = self.scorer().score(rl_policy, self.env)
 
         line = pd.DataFrame({
             "id": self.id,
@@ -60,12 +63,12 @@ class UniformRunner(ModelRunner):
             "model": [self.model_name],
             'Ts': self.params['sample_cost'],
             'Tt': self.params['movement_cost'],
-            'vi_reward': [self.vi_reward],
-            'rl_reward': [self.rl_reward],
-            'vi_ns': [self.vi_ns],
-            'rl_ns': [rl_ns],
-            'vi_distance': [self.vi_distance],
-            'rl_distance': [rl_distance],
+            'vi_reward': [self.vi_performance['reward']],
+            'rl_reward': [self.rl_performance['reward']],
+            'vi_ns': [self.vi_performance['n_samples']],
+            'rl_ns': [self.rl_performance['n_samples']],
+            'vi_distance': [self.vi_performance['dist']],
+            'rl_distance': [self.rl_performance['dist']],
             'N': self.N
         })
         line.to_csv(self.performance_path, mode='a', header=False, index=False)
@@ -87,6 +90,6 @@ if __name__ == "__main__":
             runner = UniformRunner(model, nsteps, True, kwargs)
             runner.train(use_callback=True)
             runner.save()
-            if runner.vi_reward > runner.rl_reward * 1.05:
+            if runner.vi_performance['reward'] > runner.rl_performance['reward'] * 1.05:
                 Tts = Tts[Tts != Tt]
         print(Tts)
