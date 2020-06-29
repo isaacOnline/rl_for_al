@@ -1,4 +1,4 @@
-This directory is a package that registers uniform and non uniform 
+This directory is a package that registers uniform, non uniform, and recharging
 environments with Open AI Gym. After `gym` has been installed, it can be 
 installed with `pip install -e change-point`. Instances of uniform/non-uniform 
 environments can then be created with 

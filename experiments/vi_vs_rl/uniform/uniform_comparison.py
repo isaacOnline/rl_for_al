@@ -76,20 +76,16 @@ class UniformRunner(ModelRunner):
 
 if __name__ == "__main__":
     model = "ACER"
-    nsteps = 100000
+    nsteps = 10000
     N = 1000
-    Tts = np.array([1000, 750, 500, 400, 300, 200, 50, 1])
-    while len(Tts > 0):
-        for Tt in Tts:
-            kwargs = {
-                'sample_cost': 1,
-                'movement_cost': Tt,
-                'delta': 1/N
-            }
+    Tts = np.array([10, 750, 500, 400, 300, 200, 50, 1])
+    for Tt in Tts:
+        kwargs = {
+            'sample_cost': 1,
+            'movement_cost': Tt,
+            'delta': 1/N
+        }
 
-            runner = UniformRunner(model, nsteps, True, kwargs)
-            runner.train(use_callback=True)
-            runner.save()
-            if runner.vi_performance['reward'] > runner.rl_performance['reward'] * 1.05:
-                Tts = Tts[Tts != Tt]
-        print(Tts)
+        runner = UniformRunner(model, nsteps, True, kwargs)
+        runner.train(use_callback=True)
+        runner.save()

@@ -8,13 +8,13 @@ from abc import ABC, abstractmethod
 # This is the base class for the change point problems
 
 class ChangePoint(gym.Env, ABC):
-    def __init__(self, sample_cost, movement_cost, delta, dist=None, seed=None, epsilon = None):
+    def __init__(self, sample_cost, movement_cost, delta, dist=None, seed=0, epsilon = None):
         """
         :param stop_error:
         :param seed:
         """
         self.seed(seed)
-        self._set_args(sample_cost, movement_cost, delta, seed, epsilon)
+        self._set_args(sample_cost, movement_cost, delta, epsilon)
         self._initialize_distribution(dist)
         self._initialize_state()
         self.reset()
@@ -49,15 +49,15 @@ class ChangePoint(gym.Env, ABC):
     def _cost(self, action):
         return self.sample_cost + self.movement_cost * action
 
-    def seed(self, seed=None):
+    def seed(self, seed=0):
         self.np_random, seed = seeding.np_random(seed)
+        np.random.seed(seed)
         return [seed]
 
-    def _set_args(self, sample_cost, movement_cost, delta, seed, epsilon):
+    def _set_args(self, sample_cost, movement_cost, delta, epsilon):
         self.sample_cost = sample_cost
         self.movement_cost = movement_cost
         self.delta = delta
-        self.seed = seed
         if epsilon is None:
             epsilon = delta
         self.epsilon = epsilon

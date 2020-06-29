@@ -42,9 +42,9 @@ class UniformCP(ChangePoint):
         k = round(portion * self.h_space_len)
         distance = k * self.delta
 
-        if distance == 0:
+        if np.isclose(distance, 0):
             distance += self.delta
-        if distance == self.h_space_len:
+        if np.isclose(distance, self.h_space_len):
             distance -= self.delta
 
         mvmt = distance * self.direction
