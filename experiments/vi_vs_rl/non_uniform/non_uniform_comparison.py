@@ -19,7 +19,7 @@ class NonUniformRunner(ModelRunner):
 
     def _set_policy_path(self):
         self.policy_path = f"experiments/vi_vs_rl/non_uniform/vi_policies/{int(self.params['movement_cost'])}_{self.N}_{self.dist_name}.csv"
-        self.load = np.genfromtxt
+        self._vi_policy_load = np.genfromtxt
 
     def get_rl_policy(self):
         policy = np.zeros((self.N+1, self.N+1), dtype=np.int)

@@ -86,5 +86,5 @@ if __name__ == "__main__":
     agnt.save()
     flat_policy = np.array(agnt.gym_actions).flatten()
 
-    UniformScorer().score(flat_policy, gym.make("change_point:uniform-v0", **kwargs), trials = 10000)
+    UniformScorer().score(flat_policy, gym.make("change_point:uniform-v0", **kwargs), trials=10000)
 

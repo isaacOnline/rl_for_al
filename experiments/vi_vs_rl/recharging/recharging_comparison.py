@@ -30,7 +30,7 @@ class RechargingRunner(ModelRunner):
                            f"{self.params['gamma']}_" \
                            f"{self.params['battery_capacity']}_" \
                            f"{self.dist_name}.npy"
-        self.load = np.load
+        self._vi_policy_load = np.load
 
     def get_rl_policy(self):
         # Number of different possible battery levels
@@ -128,14 +128,13 @@ def get_unif():
 
 if __name__ == "__main__":
     model = "PPO1"
-    nsteps = 100000
+    nsteps = 1000
     N = 25
     delta = 1/N
     gamma = 5
-    epsilon = 0.5
-    sample_cost = 40
+    sample_cost = 1
     battery_cap = 2500
-    dist = get_unif()
+    dist = get_truncnorm()
     for Tt in [750,50, 100, 500, 250, 100, 50, 1000]:
 
         kwargs = {
@@ -147,6 +146,6 @@ if __name__ == "__main__":
             'dist': dist
         }
 
-        runner = RechargingRunner(model, nsteps, recalculate_vi=True, env_params=kwargs)
+        runner = RechargingRunner(model, nsteps, recalculate_vi=False, env_params=kwargs)
         runner.train(use_callback=True)
         runner.save()

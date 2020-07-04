@@ -214,6 +214,5 @@ if __name__ == "__main__":
     train_time = agnt.calculate_policy()
     agnt.save()
 
-
-    RechargingScorer().score(agnt.gym_actions, gym.make("change_point:recharging-v0", **kwargs), trials = 10000)
+    RechargingScorer().score(agnt.gym_actions, gym.make("change_point:recharging-v0", **kwargs), trials=10000)
 

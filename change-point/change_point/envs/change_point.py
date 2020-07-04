@@ -51,7 +51,6 @@ class ChangePoint(gym.Env, ABC):
 
     def seed(self, seed=0):
         self.np_random, seed = seeding.np_random(seed)
-        np.random.seed(seed)
         return [seed]
 
     def _set_args(self, sample_cost, movement_cost, delta, epsilon):

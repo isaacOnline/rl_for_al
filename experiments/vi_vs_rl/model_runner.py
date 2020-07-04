@@ -6,17 +6,19 @@ import gym
 import numpy as np
 
 from abc import ABC, abstractmethod
-from stable_baselines import PPO1, ACER, ACKTR, GAIL, DQN, TRPO, A2C, HER
+from stable_baselines import PPO1, PPO2, ACER, ACKTR, GAIL, DQN, TRPO, A2C, HER
 from stable_baselines.common.callbacks import EvalCallback, StopTrainingOnRewardThreshold
+from stable_baselines.common.vec_env import DummyVecEnv
 
 models = {
     "A2C": A2C,
     "ACER": ACER,
-    "ACKTR": ACKTR,     # Appeared to get stuck on first training round
+    "ACKTR": ACKTR,
     "DQN": DQN,
-    "GAIL": GAIL,       # Not working, would need to spend more time reading to get it working
+    "GAIL": GAIL,
     "HER": HER,
     "PPO1": PPO1,
+    "PPO2": PPO2,
     "TRPO": TRPO
 }
 
@@ -65,7 +67,8 @@ class ModelRunner(ABC):
 
         if use_callback:
             #callback to stop training when vi reward is reached
-            eval_env = self.env = gym.make( f"change_point:{self.env_name}-v0", **self.params)
+            # TODO Why is there a multi
+            eval_env = self.env
             callback_on_best = StopTrainingOnRewardThreshold(reward_threshold=self.vi_performance['reward'], verbose=1)
             eval_callback = EvalCallback(eval_env, callback_on_new_best=callback_on_best,
                                          verbose=1,
@@ -96,7 +99,7 @@ class ModelRunner(ABC):
             try:
                 # Some policies are saved as csvs and some are saved as np arrays, so the loading functions are
                 # specific to each problem
-                policy = self.load(self.policy_path)
+                policy = self._vi_policy_load(self.policy_path)
                 self.vi_train_time = "Not Calculated"
             except:
                 policy = self._calc_vi()
@@ -112,6 +115,10 @@ class ModelRunner(ABC):
     def score_vi(self, recalculate):
         self.vi_policy = self.get_vi_policy(recalculate)
         self.vi_performance = self.scorer().score(self.vi_policy, self.env)
+
+    def load(self, path):
+        self.agent = models[self.model_name].load(path, env=self.env)
+        self.rl_train_time = "Not Calculated"
 
     @abstractmethod
     def get_rl_policy(self):

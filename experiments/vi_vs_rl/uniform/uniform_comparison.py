@@ -19,7 +19,7 @@ class UniformRunner(ModelRunner):
         self.policy_path = f"experiments/vi_vs_rl/uniform/vi_policies/{self.params['movement_cost']}_" \
                            f"{round(1/self.params['delta'])}_" \
                            f"{self.env_name}.csv"
-        self.load = np.genfromtxt
+        self._vi_policy_load = np.genfromtxt
 
     def get_rl_policy(self):
         policy = []
@@ -86,6 +86,6 @@ if __name__ == "__main__":
             'delta': 1/N
         }
 
-        runner = UniformRunner(model, nsteps, True, kwargs)
+        runner = UniformRunner(model, nsteps, False, kwargs)
         runner.train(use_callback=True)
         runner.save()

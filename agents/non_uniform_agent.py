@@ -131,6 +131,5 @@ if __name__ == "__main__":
     train_time = agnt.calculate_policy()
     agnt.save()
 
-
-    NonUniformScorer().score(agnt.gym_actions, gym.make("change_point:non_uniform-v0", **kwargs), trials = 10000)
+    NonUniformScorer().score(agnt.gym_actions, gym.make("change_point:non_uniform-v0", **kwargs), trials=10000)
 
