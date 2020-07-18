@@ -117,7 +117,7 @@ class ModelRunner(ABC):
         self.vi_performance = self.scorer().score(self.vi_policy, self.env)
 
     def load(self, path):
-        self.agent = models[self.model_name].load(path, env=self.env)
+        self.agent = models[self.model_name].load(path)
         self.rl_train_time = "Not Calculated"
 
     @abstractmethod

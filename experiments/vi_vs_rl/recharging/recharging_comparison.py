@@ -8,6 +8,7 @@ from agents import RechargingAgent
 from base.scorer import RechargingScorer
 from experiments.vi_vs_rl.model_runner import ModelRunner
 
+
 class RechargingRunner(ModelRunner):
     def __init__(self, model_name, nsteps, recalculate_vi=False, env_params=None):
         assert np.isclose(0, (env_params['battery_capacity'] / env_params['gamma']) % 1)
@@ -41,8 +42,8 @@ class RechargingRunner(ModelRunner):
                 for battery_level in range(0, battery_options + 1):
                     obs = np.array([first_end, second_end, battery_level])
                     # self.model.action_probability returns the stochastic policy, so we just find the most likely action
-                    action = np.argmax(self.model.action_probability(obs))
-                    policy[first_end, second_end] = action
+                    action = self.model.predict(obs, deterministic = True)[0]
+                    policy[first_end, second_end, battery_level] = action
         return policy
 
     def plot(self, rl_policy, vi_policy):
@@ -127,7 +128,7 @@ def get_unif():
     return uniform(0, 1)
 
 if __name__ == "__main__":
-    model = "PPO1"
+    model = "PPO2"
     nsteps = 1000
     N = 25
     delta = 1/N
@@ -135,7 +136,7 @@ if __name__ == "__main__":
     sample_cost = 1
     battery_cap = 2500
     dist = get_truncnorm()
-    for Tt in [750,50, 100, 500, 250, 100, 50, 1000]:
+    for Tt in [750]: #,50, 100, 500, 250, 100, 50, 1000]:
 
         kwargs = {
             'sample_cost': sample_cost,
@@ -147,5 +148,6 @@ if __name__ == "__main__":
         }
 
         runner = RechargingRunner(model, nsteps, recalculate_vi=False, env_params=kwargs)
-        runner.train(use_callback=True)
+        runner.load("rl-baselines-zoo-master/logs/ppo2/recharging-v0_9/best_model.zip")
+        #runner.train(use_callback=True)
         runner.save()

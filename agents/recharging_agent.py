@@ -128,6 +128,11 @@ class RechargingAgent(ValueIterator):
                             # The battery at origin is capped at battery capacity
                             max_recharge_time = self.battery_capacity - battery_level + dist_to_origin/self.N * self.movement_cost
 
+                            # Recharge times must be divisible by gamma
+                            # Ceiling division is used because overcharging is allowable, but undercharging could the agent
+                            min_recharge_time = self.gamma * np.ceil(min_recharge_time / self.gamma)
+                            max_recharge_time = self.gamma * np.ceil(max_recharge_time / self.gamma)
+
 
                             for recharge_time in np.arange(min_recharge_time, max_recharge_time + self.gamma, self.gamma):
                                 if recharge_time > 0:
@@ -158,7 +163,8 @@ class RechargingAgent(ValueIterator):
                         battery_index = int(round(battery_level / self.gamma))
                         self.policy[location, opposite_bound, battery_index] = best_action
                         self.state_values[location, opposite_bound, battery_index] = best_ev
-                        self.gym_actions[location,opposite_bound, battery_index] = (round(best_action/h_space_len * self.N), best_recharge_time)
+                        self.gym_actions[location,opposite_bound, battery_index] = (round(best_action/h_space_len * self.N),
+                                                                                    best_recharge_time / self.gamma)
 
         self.policy = self.policy/self.N
         end_time = datetime.now()
