@@ -1,15 +1,31 @@
 import numpy as np
-
 from tqdm import tqdm
 from agents.value_iterator import ValueIterator
-from scipy.stats import uniform, truncnorm
+from scipy.stats import uniform
 from datetime import datetime
 from base.scorer import NonUniformScorer
+from base.distributions import get_unif
 import gym
 
 
+
 class NonUniformAgent(ValueIterator):
+    """
+    This agent is meant to calculate a policy for the non-uniform change point problem. The policy can then be fed to a
+    NonUniformScorer to see how well the agent performs on the non_uniform-v0 gym environment.
+
+    This agent is based on John's code for value iteration, (for the non uniform case)
+    """
     def __init__(self, delta, epsilon = None, sample_cost = 1, movement_cost = 1000, dist = None):
+        """
+        Save parameters and initialize policy
+
+        :param delta: delta from the sps paper
+        :param epsilon: epsilon from the sps paper
+        :param sample_cost: Ts from the sps paper
+        :param movement_cost: Tt from the sps paper
+        :param dist: The distribution of change points. Object needs to have a cdf function.
+        """
         ValueIterator.__init__(self, delta, epsilon, sample_cost, movement_cost)
         # Dist must be an object with a cdf function
         if dist is None:
@@ -24,6 +40,11 @@ class NonUniformAgent(ValueIterator):
         self.gym_actions = np.zeros((self.N + 1, self.N + 1), np.int)
 
     def calculate_policy(self):
+        """
+        Calculate the optimal policy for the parameters given in initialization
+        :return:
+        """
+
         # states are tuples (x,xh) where x is the current location and xh is
         # the opposite end of the hypothesis space
         start_time = datetime.now()
@@ -96,24 +117,17 @@ class NonUniformAgent(ValueIterator):
         return self.train_time
 
     def save(self):
+        """
+        Save policy to a csv file so it can be used later on
+
+        :return:
+        """
         dist_name = self.dist.dist.name
-        policy_path = f"experiments/vi_vs_rl/non_uniform/vi_policies/{int(self.movement_cost)}_{self.N}_{dist_name}.csv"
+        policy_path = f"experiments/vi_vs_sb/non_uniform/vi_policies/{int(self.movement_cost)}_{self.N}_{dist_name}.csv"
         np.savetxt(policy_path, self.gym_actions)
 
-def get_dist():
-    min = 0
-    max = 1
-    mean = 0.5
-    sd = np.sqrt(0.1)
-    a = (min - mean) / sd
-    b = (max - mean) / sd
-    dist = truncnorm(a, b, loc=mean, scale=sd)
-    return dist
-
-def get_unif():
-    return uniform(0,1)
-
 if __name__ == "__main__":
+    # Define params
     sample_cost = 1
     movement_cost = 100
     N = 100
@@ -126,10 +140,11 @@ if __name__ == "__main__":
         'dist': dist
     }
 
-
+    # Train agent
     agnt = NonUniformAgent(**kwargs)
     train_time = agnt.calculate_policy()
     agnt.save()
 
+    # See performance
     NonUniformScorer().score(agnt.gym_actions, gym.make("change_point:non_uniform-v0", **kwargs), trials=10000)
 

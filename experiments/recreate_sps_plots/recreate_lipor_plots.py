@@ -1,5 +1,5 @@
 from agents import UniformAgent
-from base.tracker import Tracker
+from experiments.recreate_sps_plots.tracker import Tracker
 import time
 import pandas as pd
 import numpy as np
@@ -15,10 +15,10 @@ def changing_tt(num_samples):
     Ts = 1
     N = 1000
     for Tt in range(1, 1000):
-        agent = OptimalAgent(Ts, Tt, N, stopErr)
+        agent = UniformAgent(Ts, Tt, N, stopErr)
         tracker = Tracker(agent)
         for sample in range(num_samples):
-            agent.fit()
+            agent.calculate_policy()
             tracker.log_uniform()
         if Tt % 100 == 99:
             print("{0}: {1} values complete, {2} remaining".format(time.strftime("%-I:%M %p"),Tt+1,1000-Tt-1))

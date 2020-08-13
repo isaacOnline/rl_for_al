@@ -2,8 +2,10 @@ from abc import ABC, abstractmethod
 import gym
 import numpy as np
 
-
 class MctsAgent(ABC):
+    """
+    Just a base class to be built out as I build agents for other environments
+    """
     def __init__(self, env, params):
         self.env = env
         self.params = params
@@ -35,10 +37,18 @@ class ActionNode(object):
         self.index = np.Inf
 
     def ev(self, parent_n):
+        """
+        Calculate the state action value, using the basic UCT formulation from Kocsis and Szepesvari.
+
+        :param parent_n: The number of times the parent has been visited, used in calculating the exploration term
+        :return:
+        """
         if self.n == 0:
             raise NodeNotVisitedError
-        C_p = 1/np.sqrt(2) # Todo: Choose the actual value here
-        return self.total_reward / self.n + 2 * C_p * np.sqrt(2 * np.log(parent_n)/ self.n)
+        c = np.sqrt(2) # Todo: Choose the actual value here
+        # The value I've chosen is the recommended value from page 100 of RL & OC - Bertsekas ASSUMING THAT THE REWARD
+        # HAS BEEN NORMALIZED. So either the reward needs to be normalized, or c needs to change.
+        return self.total_reward / self.n + c * np.sqrt(np.log(parent_n)/ self.n)
 
     def get_state(self, cp):
         if self.action > cp:
@@ -105,6 +115,8 @@ class StateNode(object):
 
     def terminal_cost(self, dist_to_cp, epsilon, movement_cost, sample_cost):
         # This should be the expected cost to finish from this state using the base policy
+        # TODO: Make sure the base policy is what it should be. Right now just performs bisection.
+
         assert 0 <= dist_to_cp and dist_to_cp <= self.state, "Given change point not accessible"
         h_space_len = self.state
         cost = 0
@@ -122,7 +134,9 @@ class StateNode(object):
 
 
 class UniformMctsAgent(MctsAgent):
+    # TODO: Switch this to being more universal/less environment specific
     def run(self):
+        # TODO: Switch to where it can be run starting at any state, so that it can be used on-line
         self.root = StateNode(1, delta = self.params['delta'])
         for i in range(10000):
             dist_to_cp = self.env.dist.rvs(1)[0]
@@ -155,6 +169,8 @@ class UniformMctsAgent(MctsAgent):
 
 
 if __name__ == "__main__":
+    # TODO: Build a way for this agent to run on the uniform gym environment
+    # TODO: Make sure that the tree is saved as you progress through the environment when doing ^
     parameters = {
         "movement_cost": 1,
         "sample_cost": 1,
