@@ -134,13 +134,13 @@ class RechargingRunner(ModelRunner):
 if __name__ == "__main__":
     model = "PPO2"
     nsteps = 1000
-    N = 25
+    N = 100
     delta = 1/N
-    gamma = 5
-    sample_cost = 1
-    battery_cap = 2500
+    gamma = 1
+    sample_cost = 40
+    battery_cap = 300
     dist = get_truncnorm()
-    for Tt in [750]: #,50, 100, 500, 250, 100, 50, 1000]:
+    for Tt in [100]: #,50, 100, 500, 250, 100, 50, 1000]:
 
         kwargs = {
             'sample_cost': sample_cost,
@@ -153,8 +153,8 @@ if __name__ == "__main__":
 
 
         runner = RechargingRunner(model, nsteps, kwargs)
-        runner.train_vi()
+        runner.load_vi()
         runner.score_vi()
-        runner.load_sb("rl-baselines-zoo-master/logs/ppo2/recharging-v0_9/best_model.zip")
+        runner.load_sb("rl-baselines-zoo-master/logs/ppo2/recharging-v0_19/best_model.zip")
         runner.score_sb()
         runner.save()

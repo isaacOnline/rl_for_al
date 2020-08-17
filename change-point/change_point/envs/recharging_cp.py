@@ -26,6 +26,10 @@ class RechargingCP(ChangePoint):
 
         assert np.isclose(0, (battery_capacity / gamma) % 1)
 
+        # Make sure sample cost is divisible by gamma, since the battery level depletes in increments of sample_cost,
+        # and we want the battery_level to be divisible by gamma
+        assert np.isclose(0, (sample_cost/gamma) % 1)
+
         # make sure (movement cost x delta) is divisible by gamma, as battery level needs to be divisible by gamma
         # (since the cost of an action determines how much the battery level declines)
         assert np.isclose(0, (movement_cost * delta / gamma) % 1)
